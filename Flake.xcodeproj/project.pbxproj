@@ -1,0 +1,562 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		010D6394722212983B7F9C41 /* MoveCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F7015015DD2690D98011959 /* MoveCardView.swift */; };
+		09E1CD6280F7037D8A333C80 /* RecapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91CC777E6F0B17BD18EE394D /* RecapView.swift */; };
+		09ECE3FFBE607DE21CC49299 /* RoastsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49177A8962487B98FFC49A68 /* RoastsView.swift */; };
+		0E3F3D9E632D4E652E38B301 /* FlakeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105CE79F66E309911C9FADDB /* FlakeApp.swift */; };
+		10B8C65251F0C2EB445CD5B9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4FC1C9D495647D80AD608C00 /* Assets.xcassets */; };
+		21E6555F49981CB1EE84C1D7 /* VoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5E18B8D3A96162FA19B293 /* VoteView.swift */; };
+		24F48354934270C297C7AFBA /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF6023B1A9D4192298CFBC4 /* HomeView.swift */; };
+		292BB29B010E1AE8715B3343 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 869A68A502B77455426F3913 /* AvatarView.swift */; };
+		310EC84A54E77BFB99531DF5 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8653846A403840A9FD8A7730 /* AppState.swift */; };
+		3A331BE87CB21BA287F81903 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = C854834D0125C9ADD14894FD /* Models.swift */; };
+		3BF1CC8B5558B9AC2D4CC947 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC77E61B70E78F6A320C8F52 /* Theme.swift */; };
+		3C63DBE1AF84FEA0C1FF4E12 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = C854834D0125C9ADD14894FD /* Models.swift */; };
+		4D84B9F0E6D489E46B5BA6BB /* FlakeMessages.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1F24D0E4A305882318B57FA5 /* FlakeMessages.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		645253C994FDEC980C453CF7 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F01F359A38DA6603B8FD7D7 /* LeaderboardView.swift */; };
+		68916497D2210D3216864323 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A05EE7F472AF1C7530F93B5 /* ProfileView.swift */; };
+		6FF125E3FC14651EA0E3DC03 /* PillView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9098BD25CF1F285C313FD97F /* PillView.swift */; };
+		71F44F6D0033547BD315EE15 /* GroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F60518AB202419656F162757 /* GroupsView.swift */; };
+		73C53B2C12EE796F9BE5F625 /* FlakeNavBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCBBA40D7A2E99B277AFA2E /* FlakeNavBar.swift */; };
+		78BC9E731DD355504CA6229A /* OmbreBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7CFAF1DC783A7B228F05F29 /* OmbreBackground.swift */; };
+		7CA57F688BB33B5388E8201E /* RSVPExtensionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0331A6D2D672F15A8462CA6A /* RSVPExtensionView.swift */; };
+		9F2BB4F96BC1DD4AFE3EF603 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 869A68A502B77455426F3913 /* AvatarView.swift */; };
+		A0C8B19C177BFC55A03E2443 /* MessagesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29D35F0D716360AE2C280DD0 /* MessagesViewController.swift */; };
+		A1C71D377B89A29F4706C8C1 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5FE1A27875B95D658A34928 /* ContentView.swift */; };
+		B1834D68E90062273C17197C /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7147CAE8FC714F4A153AB824 /* MainInterface.storyboard */; };
+		BB55C9D876B66DB3B48D2DDC /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC77E61B70E78F6A320C8F52 /* Theme.swift */; };
+		BD2B6558EC814D3C3AB90979 /* RSVPView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E900CC6304F46A1D52789DC2 /* RSVPView.swift */; };
+		FDF5730BD41424E76B82CD92 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AC4171F49761409D336137E2 /* Assets.xcassets */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		C2393F71DA38E5519C46301E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F51B0F3ECC6FD75703CD9737 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = ED4975A608F6BEFE67F08EDF;
+			remoteInfo = FlakeMessages;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		DE6D137F24B8D1CE5EA414C9 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				4D84B9F0E6D489E46B5BA6BB /* FlakeMessages.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		029B5B7733003927BA1A9B29 /* Flake.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Flake.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0331A6D2D672F15A8462CA6A /* RSVPExtensionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSVPExtensionView.swift; sourceTree = "<group>"; };
+		105CE79F66E309911C9FADDB /* FlakeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlakeApp.swift; sourceTree = "<group>"; };
+		1F24D0E4A305882318B57FA5 /* FlakeMessages.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = FlakeMessages.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		29D35F0D716360AE2C280DD0 /* MessagesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagesViewController.swift; sourceTree = "<group>"; };
+		347CE791CFCB9408D0B49428 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		49177A8962487B98FFC49A68 /* RoastsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoastsView.swift; sourceTree = "<group>"; };
+		4FC1C9D495647D80AD608C00 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		55561516357BDF9A1261F57F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		6A05EE7F472AF1C7530F93B5 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		7147CAE8FC714F4A153AB824 /* MainInterface.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = MainInterface.storyboard; sourceTree = "<group>"; };
+		8653846A403840A9FD8A7730 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		869A68A502B77455426F3913 /* AvatarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarView.swift; sourceTree = "<group>"; };
+		8F01F359A38DA6603B8FD7D7 /* LeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardView.swift; sourceTree = "<group>"; };
+		9098BD25CF1F285C313FD97F /* PillView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PillView.swift; sourceTree = "<group>"; };
+		91CC777E6F0B17BD18EE394D /* RecapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapView.swift; sourceTree = "<group>"; };
+		9F7015015DD2690D98011959 /* MoveCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoveCardView.swift; sourceTree = "<group>"; };
+		AC4171F49761409D336137E2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		BC77E61B70E78F6A320C8F52 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		BDCBBA40D7A2E99B277AFA2E /* FlakeNavBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlakeNavBar.swift; sourceTree = "<group>"; };
+		C854834D0125C9ADD14894FD /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		DBF6023B1A9D4192298CFBC4 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		E7CFAF1DC783A7B228F05F29 /* OmbreBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OmbreBackground.swift; sourceTree = "<group>"; };
+		E900CC6304F46A1D52789DC2 /* RSVPView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSVPView.swift; sourceTree = "<group>"; };
+		ED5E18B8D3A96162FA19B293 /* VoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoteView.swift; sourceTree = "<group>"; };
+		F5FE1A27875B95D658A34928 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		F60518AB202419656F162757 /* GroupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupsView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		05EBC0B91A7F233344B40FE8 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				869A68A502B77455426F3913 /* AvatarView.swift */,
+				C854834D0125C9ADD14894FD /* Models.swift */,
+				BC77E61B70E78F6A320C8F52 /* Theme.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		5EE60754529BAD70B0460E66 /* FlakeMessages */ = {
+			isa = PBXGroup;
+			children = (
+				AC4171F49761409D336137E2 /* Assets.xcassets */,
+				55561516357BDF9A1261F57F /* Info.plist */,
+				29D35F0D716360AE2C280DD0 /* MessagesViewController.swift */,
+				9F7015015DD2690D98011959 /* MoveCardView.swift */,
+				0331A6D2D672F15A8462CA6A /* RSVPExtensionView.swift */,
+				8C1AEBEACC0B47F832B12526 /* Resources */,
+			);
+			path = FlakeMessages;
+			sourceTree = "<group>";
+		};
+		6A184A963271CC92C66DD979 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				029B5B7733003927BA1A9B29 /* Flake.app */,
+				1F24D0E4A305882318B57FA5 /* FlakeMessages.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		70D73501377F1C56A0EAD969 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				F5FE1A27875B95D658A34928 /* ContentView.swift */,
+				F60518AB202419656F162757 /* GroupsView.swift */,
+				DBF6023B1A9D4192298CFBC4 /* HomeView.swift */,
+				8F01F359A38DA6603B8FD7D7 /* LeaderboardView.swift */,
+				6A05EE7F472AF1C7530F93B5 /* ProfileView.swift */,
+				91CC777E6F0B17BD18EE394D /* RecapView.swift */,
+				49177A8962487B98FFC49A68 /* RoastsView.swift */,
+				E900CC6304F46A1D52789DC2 /* RSVPView.swift */,
+				ED5E18B8D3A96162FA19B293 /* VoteView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		8C1AEBEACC0B47F832B12526 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				7147CAE8FC714F4A153AB824 /* MainInterface.storyboard */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		8D6E023FA7B565288CA66191 = {
+			isa = PBXGroup;
+			children = (
+				DD63E39F5D217A9A3CB469BA /* Flake */,
+				5EE60754529BAD70B0460E66 /* FlakeMessages */,
+				05EBC0B91A7F233344B40FE8 /* Shared */,
+				6A184A963271CC92C66DD979 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		ABFC3019D5AC69F29BDD9253 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				BDCBBA40D7A2E99B277AFA2E /* FlakeNavBar.swift */,
+				E7CFAF1DC783A7B228F05F29 /* OmbreBackground.swift */,
+				9098BD25CF1F285C313FD97F /* PillView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		DD63E39F5D217A9A3CB469BA /* Flake */ = {
+			isa = PBXGroup;
+			children = (
+				8653846A403840A9FD8A7730 /* AppState.swift */,
+				4FC1C9D495647D80AD608C00 /* Assets.xcassets */,
+				105CE79F66E309911C9FADDB /* FlakeApp.swift */,
+				347CE791CFCB9408D0B49428 /* Info.plist */,
+				ABFC3019D5AC69F29BDD9253 /* Components */,
+				70D73501377F1C56A0EAD969 /* Views */,
+			);
+			path = Flake;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C9CD7140A64958F79F2B4618 /* Flake */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0246D6D6BF9758EF1D40FE1E /* Build configuration list for PBXNativeTarget "Flake" */;
+			buildPhases = (
+				DAA32E610825DE7108B5CE2F /* Sources */,
+				8420D42418D09DCAC6E911A0 /* Resources */,
+				DE6D137F24B8D1CE5EA414C9 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BC025BEF5C8DC9B86FF67AB2 /* PBXTargetDependency */,
+			);
+			name = Flake;
+			packageProductDependencies = (
+			);
+			productName = Flake;
+			productReference = 029B5B7733003927BA1A9B29 /* Flake.app */;
+			productType = "com.apple.product-type.application";
+		};
+		ED4975A608F6BEFE67F08EDF /* FlakeMessages */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BEFE0FC5523C8A807D5CA608 /* Build configuration list for PBXNativeTarget "FlakeMessages" */;
+			buildPhases = (
+				0157D71D043DF3A26FF06301 /* Sources */,
+				B3F5D6B1CE519AFAB2D698F5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FlakeMessages;
+			packageProductDependencies = (
+			);
+			productName = FlakeMessages;
+			productReference = 1F24D0E4A305882318B57FA5 /* FlakeMessages.appex */;
+			productType = "com.apple.product-type.app-extension.messages";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F51B0F3ECC6FD75703CD9737 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					C9CD7140A64958F79F2B4618 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+					ED4975A608F6BEFE67F08EDF = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
+				};
+			};
+			buildConfigurationList = 3692968C8AE4301122B989F9 /* Build configuration list for PBXProject "Flake" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 8D6E023FA7B565288CA66191;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 6A184A963271CC92C66DD979 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C9CD7140A64958F79F2B4618 /* Flake */,
+				ED4975A608F6BEFE67F08EDF /* FlakeMessages */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		8420D42418D09DCAC6E911A0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				10B8C65251F0C2EB445CD5B9 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B3F5D6B1CE519AFAB2D698F5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FDF5730BD41424E76B82CD92 /* Assets.xcassets in Resources */,
+				B1834D68E90062273C17197C /* MainInterface.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0157D71D043DF3A26FF06301 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9F2BB4F96BC1DD4AFE3EF603 /* AvatarView.swift in Sources */,
+				A0C8B19C177BFC55A03E2443 /* MessagesViewController.swift in Sources */,
+				3C63DBE1AF84FEA0C1FF4E12 /* Models.swift in Sources */,
+				010D6394722212983B7F9C41 /* MoveCardView.swift in Sources */,
+				7CA57F688BB33B5388E8201E /* RSVPExtensionView.swift in Sources */,
+				BB55C9D876B66DB3B48D2DDC /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DAA32E610825DE7108B5CE2F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				310EC84A54E77BFB99531DF5 /* AppState.swift in Sources */,
+				292BB29B010E1AE8715B3343 /* AvatarView.swift in Sources */,
+				A1C71D377B89A29F4706C8C1 /* ContentView.swift in Sources */,
+				0E3F3D9E632D4E652E38B301 /* FlakeApp.swift in Sources */,
+				73C53B2C12EE796F9BE5F625 /* FlakeNavBar.swift in Sources */,
+				71F44F6D0033547BD315EE15 /* GroupsView.swift in Sources */,
+				24F48354934270C297C7AFBA /* HomeView.swift in Sources */,
+				645253C994FDEC980C453CF7 /* LeaderboardView.swift in Sources */,
+				3A331BE87CB21BA287F81903 /* Models.swift in Sources */,
+				78BC9E731DD355504CA6229A /* OmbreBackground.swift in Sources */,
+				6FF125E3FC14651EA0E3DC03 /* PillView.swift in Sources */,
+				68916497D2210D3216864323 /* ProfileView.swift in Sources */,
+				BD2B6558EC814D3C3AB90979 /* RSVPView.swift in Sources */,
+				09E1CD6280F7037D8A333C80 /* RecapView.swift in Sources */,
+				09ECE3FFBE607DE21CC49299 /* RoastsView.swift in Sources */,
+				3BF1CC8B5558B9AC2D4CC947 /* Theme.swift in Sources */,
+				21E6555F49981CB1EE84C1D7 /* VoteView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BC025BEF5C8DC9B86FF67AB2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = ED4975A608F6BEFE67F08EDF /* FlakeMessages */;
+			targetProxy = C2393F71DA38E5519C46301E /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2C08C6EB3CB85A0BE8A2A680 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		819F8E2C97CB6EB85FF942C9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
+				INFOPLIST_FILE = FlakeMessages/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.flake.app.messages;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		C21BC0342A82AC4762DF91B6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGNING_REQUIRED = NO;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		CCD9168F274133021490B97C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
+				INFOPLIST_FILE = FlakeMessages/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.flake.app.messages;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		EA66386BA2F8D3706F0B2A8A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Flake/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.flake.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		F1FA3104CEC5DE6DDCB144CE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Flake/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.flake.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0246D6D6BF9758EF1D40FE1E /* Build configuration list for PBXNativeTarget "Flake" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EA66386BA2F8D3706F0B2A8A /* Debug */,
+				F1FA3104CEC5DE6DDCB144CE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3692968C8AE4301122B989F9 /* Build configuration list for PBXProject "Flake" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C21BC0342A82AC4762DF91B6 /* Debug */,
+				2C08C6EB3CB85A0BE8A2A680 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BEFE0FC5523C8A807D5CA608 /* Build configuration list for PBXNativeTarget "FlakeMessages" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CCD9168F274133021490B97C /* Debug */,
+				819F8E2C97CB6EB85FF942C9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F51B0F3ECC6FD75703CD9737 /* Project object */;
+}
