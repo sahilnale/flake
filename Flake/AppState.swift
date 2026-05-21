@@ -12,6 +12,11 @@ final class AppState {
 
     var currentUser: Member = Member.currentUser
 
+    // MARK: - Auth
+    var authStatus: AuthStatus = .signedOut
+    var authErrorMessage: String?
+    var backendProfile: BackendProfile?
+
     // MARK: - Groups & current group
 
     var groups: [FlakeGroup] = FlakeGroup.sampleGroups
@@ -125,6 +130,10 @@ final class AppState {
     var excusedRequestSheetVisible = false
     var attendanceSheetVisible = false
     var featureScreen: FeatureScreen?
+
+    var shouldShowAuthGate: Bool {
+        authStatus == .signedOut || authStatus == .signingIn
+    }
 
     // MARK: - Season
     var season = Season(number: 3, totalWeeks: 12, currentWeek: 7,
@@ -275,6 +284,41 @@ final class AppState {
         }
     }
 
+    func continueWithSampleData() {
+        authStatus = .sample
+        authErrorMessage = nil
+    }
+
+    func signInWithApple(identityToken: String, nonce: String, displayName: String) async {
+        authStatus = .signingIn
+        authErrorMessage = nil
+        do {
+            let profile = try await FlakeBackend.shared.signInWithApple(
+                identityToken: identityToken,
+                nonce: nonce,
+                displayName: displayName
+            )
+            backendProfile = profile
+            currentUser.name = profile.displayName
+            currentUser.initials = profile.initials
+            currentUser.avatarColorHex = profile.avatarColor
+            authStatus = .signedIn
+        } catch {
+            authErrorMessage = error.localizedDescription
+            authStatus = .signedOut
+        }
+    }
+
+    func signOut() async {
+        do {
+            try await FlakeBackend.shared.signOut()
+        } catch {
+            authErrorMessage = error.localizedDescription
+        }
+        backendProfile = nil
+        authStatus = .signedOut
+    }
+
     enum Tab: Int, CaseIterable {
         case home, ranks, roasts, you
         var icon: String {
@@ -298,6 +342,13 @@ final class AppState {
     enum FeatureScreen {
         case groups
         case recap
+    }
+
+    enum AuthStatus {
+        case signedOut
+        case signingIn
+        case signedIn
+        case sample
     }
 
     struct EventEntry: Identifiable {

@@ -11,7 +11,9 @@ struct ContentView: View {
             Color.flakeBG.ignoresSafeArea()
 
             Group {
-                if let feature = state.featureScreen {
+                if state.shouldShowAuthGate {
+                    AuthGateView()
+                } else if let feature = state.featureScreen {
                     switch feature {
                     case .groups: GroupsView()
                     case .recap: RecapView()
@@ -27,7 +29,7 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            if state.featureScreen == nil {
+            if state.featureScreen == nil && !state.shouldShowAuthGate {
                 FlakeNavBar(selected: $state.selectedTab)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 8)

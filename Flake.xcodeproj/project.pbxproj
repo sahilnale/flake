@@ -8,14 +8,18 @@
 
 /* Begin PBXBuildFile section */
 		010D6394722212983B7F9C41 /* MoveCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F7015015DD2690D98011959 /* MoveCardView.swift */; };
+		094C4608662132A00B510921 /* SupabaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CC152E2718FDDEF001A8BE9 /* SupabaseConfig.swift */; };
 		09E1CD6280F7037D8A333C80 /* RecapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91CC777E6F0B17BD18EE394D /* RecapView.swift */; };
 		09ECE3FFBE607DE21CC49299 /* RoastsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49177A8962487B98FFC49A68 /* RoastsView.swift */; };
 		0E3F3D9E632D4E652E38B301 /* FlakeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105CE79F66E309911C9FADDB /* FlakeApp.swift */; };
 		10B8C65251F0C2EB445CD5B9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4FC1C9D495647D80AD608C00 /* Assets.xcassets */; };
+		13521EBB65A761198C71AE90 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = F00EC31DA7DD72B6637A645B /* Supabase */; };
 		21E6555F49981CB1EE84C1D7 /* VoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5E18B8D3A96162FA19B293 /* VoteView.swift */; };
 		24F48354934270C297C7AFBA /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF6023B1A9D4192298CFBC4 /* HomeView.swift */; };
+		25C425D6685779B74EF3FB38 /* AuthGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E256171EF2DE0BDB76A3F48F /* AuthGateView.swift */; };
 		292BB29B010E1AE8715B3343 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 869A68A502B77455426F3913 /* AvatarView.swift */; };
 		310EC84A54E77BFB99531DF5 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8653846A403840A9FD8A7730 /* AppState.swift */; };
+		367AB3AB91B5F422AC1EFDFE /* BackendModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4642E8790C710A04F087DA4 /* BackendModels.swift */; };
 		3A331BE87CB21BA287F81903 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = C854834D0125C9ADD14894FD /* Models.swift */; };
 		3BF1CC8B5558B9AC2D4CC947 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC77E61B70E78F6A320C8F52 /* Theme.swift */; };
 		3C63DBE1AF84FEA0C1FF4E12 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = C854834D0125C9ADD14894FD /* Models.swift */; };
@@ -23,6 +27,7 @@
 		645253C994FDEC980C453CF7 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F01F359A38DA6603B8FD7D7 /* LeaderboardView.swift */; };
 		68916497D2210D3216864323 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A05EE7F472AF1C7530F93B5 /* ProfileView.swift */; };
 		6FF125E3FC14651EA0E3DC03 /* PillView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9098BD25CF1F285C313FD97F /* PillView.swift */; };
+		70BEDF33BAC4A2BBDB01F45C /* FlakeBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3BB32C1C353859CBB16B244 /* FlakeBackend.swift */; };
 		71F44F6D0033547BD315EE15 /* GroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F60518AB202419656F162757 /* GroupsView.swift */; };
 		73C53B2C12EE796F9BE5F625 /* FlakeNavBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDCBBA40D7A2E99B277AFA2E /* FlakeNavBar.swift */; };
 		78BC9E731DD355504CA6229A /* OmbreBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7CFAF1DC783A7B228F05F29 /* OmbreBackground.swift */; };
@@ -33,6 +38,9 @@
 		B1834D68E90062273C17197C /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7147CAE8FC714F4A153AB824 /* MainInterface.storyboard */; };
 		BB55C9D876B66DB3B48D2DDC /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC77E61B70E78F6A320C8F52 /* Theme.swift */; };
 		BD2B6558EC814D3C3AB90979 /* RSVPView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E900CC6304F46A1D52789DC2 /* RSVPView.swift */; };
+		CBE20F15B939B909E9FB2823 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = C3128BC691C216A6FF67DE23 /* Supabase */; };
+		D6F22C78E5B1C75F1C12FCE8 /* BackendModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4642E8790C710A04F087DA4 /* BackendModels.swift */; };
+		E0232BA7856F05145794281D /* SupabaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CC152E2718FDDEF001A8BE9 /* SupabaseConfig.swift */; };
 		FDF5730BD41424E76B82CD92 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AC4171F49761409D336137E2 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -61,10 +69,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		029B5B7733003927BA1A9B29 /* Flake.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Flake.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		029B5B7733003927BA1A9B29 /* Flake.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Flake.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0331A6D2D672F15A8462CA6A /* RSVPExtensionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSVPExtensionView.swift; sourceTree = "<group>"; };
 		105CE79F66E309911C9FADDB /* FlakeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlakeApp.swift; sourceTree = "<group>"; };
-		1F24D0E4A305882318B57FA5 /* FlakeMessages.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = FlakeMessages.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F24D0E4A305882318B57FA5 /* FlakeMessages.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FlakeMessages.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		29D35F0D716360AE2C280DD0 /* MessagesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessagesViewController.swift; sourceTree = "<group>"; };
 		347CE791CFCB9408D0B49428 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		49177A8962487B98FFC49A68 /* RoastsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoastsView.swift; sourceTree = "<group>"; };
@@ -77,25 +85,52 @@
 		8F01F359A38DA6603B8FD7D7 /* LeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardView.swift; sourceTree = "<group>"; };
 		9098BD25CF1F285C313FD97F /* PillView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PillView.swift; sourceTree = "<group>"; };
 		91CC777E6F0B17BD18EE394D /* RecapView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecapView.swift; sourceTree = "<group>"; };
+		9CC152E2718FDDEF001A8BE9 /* SupabaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseConfig.swift; sourceTree = "<group>"; };
 		9F7015015DD2690D98011959 /* MoveCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoveCardView.swift; sourceTree = "<group>"; };
 		AC4171F49761409D336137E2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		BC77E61B70E78F6A320C8F52 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		BDCBBA40D7A2E99B277AFA2E /* FlakeNavBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlakeNavBar.swift; sourceTree = "<group>"; };
+		C4642E8790C710A04F087DA4 /* BackendModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackendModels.swift; sourceTree = "<group>"; };
 		C854834D0125C9ADD14894FD /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		DBF6023B1A9D4192298CFBC4 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		E256171EF2DE0BDB76A3F48F /* AuthGateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthGateView.swift; sourceTree = "<group>"; };
 		E7CFAF1DC783A7B228F05F29 /* OmbreBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OmbreBackground.swift; sourceTree = "<group>"; };
 		E900CC6304F46A1D52789DC2 /* RSVPView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSVPView.swift; sourceTree = "<group>"; };
 		ED5E18B8D3A96162FA19B293 /* VoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoteView.swift; sourceTree = "<group>"; };
+		F3BB32C1C353859CBB16B244 /* FlakeBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlakeBackend.swift; sourceTree = "<group>"; };
 		F5FE1A27875B95D658A34928 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		F60518AB202419656F162757 /* GroupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupsView.swift; sourceTree = "<group>"; };
+		FC1628572FB813650006033C /* FlakeMessages.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FlakeMessages.entitlements; sourceTree = "<group>"; };
+		FC1628582FB813700006033C /* Flake.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Flake.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		72B1F73889A5A59BAD7F00A7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CBE20F15B939B909E9FB2823 /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		97DAB0218F27B0C2E3C48EE5 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				13521EBB65A761198C71AE90 /* Supabase in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		05EBC0B91A7F233344B40FE8 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
 				869A68A502B77455426F3913 /* AvatarView.swift */,
+				C4642E8790C710A04F087DA4 /* BackendModels.swift */,
 				C854834D0125C9ADD14894FD /* Models.swift */,
+				9CC152E2718FDDEF001A8BE9 /* SupabaseConfig.swift */,
 				BC77E61B70E78F6A320C8F52 /* Theme.swift */,
 			);
 			path = Shared;
@@ -104,6 +139,7 @@
 		5EE60754529BAD70B0460E66 /* FlakeMessages */ = {
 			isa = PBXGroup;
 			children = (
+				FC1628572FB813650006033C /* FlakeMessages.entitlements */,
 				AC4171F49761409D336137E2 /* Assets.xcassets */,
 				55561516357BDF9A1261F57F /* Info.plist */,
 				29D35F0D716360AE2C280DD0 /* MessagesViewController.swift */,
@@ -135,8 +171,17 @@
 				49177A8962487B98FFC49A68 /* RoastsView.swift */,
 				E900CC6304F46A1D52789DC2 /* RSVPView.swift */,
 				ED5E18B8D3A96162FA19B293 /* VoteView.swift */,
+				7B8D7EE2658F3FAE45D7884A /* Auth */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		7B8D7EE2658F3FAE45D7884A /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				E256171EF2DE0BDB76A3F48F /* AuthGateView.swift */,
+			);
+			path = Auth;
 			sourceTree = "<group>";
 		};
 		8C1AEBEACC0B47F832B12526 /* Resources */ = {
@@ -167,14 +212,24 @@
 			path = Components;
 			sourceTree = "<group>";
 		};
+		B1D90D67C944BDDDC8033E82 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				F3BB32C1C353859CBB16B244 /* FlakeBackend.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
 		DD63E39F5D217A9A3CB469BA /* Flake */ = {
 			isa = PBXGroup;
 			children = (
+				FC1628582FB813700006033C /* Flake.entitlements */,
 				8653846A403840A9FD8A7730 /* AppState.swift */,
 				4FC1C9D495647D80AD608C00 /* Assets.xcassets */,
 				105CE79F66E309911C9FADDB /* FlakeApp.swift */,
 				347CE791CFCB9408D0B49428 /* Info.plist */,
 				ABFC3019D5AC69F29BDD9253 /* Components */,
+				B1D90D67C944BDDDC8033E82 /* Services */,
 				70D73501377F1C56A0EAD969 /* Views */,
 			);
 			path = Flake;
@@ -189,6 +244,7 @@
 			buildPhases = (
 				DAA32E610825DE7108B5CE2F /* Sources */,
 				8420D42418D09DCAC6E911A0 /* Resources */,
+				72B1F73889A5A59BAD7F00A7 /* Frameworks */,
 				DE6D137F24B8D1CE5EA414C9 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
@@ -198,6 +254,7 @@
 			);
 			name = Flake;
 			packageProductDependencies = (
+				C3128BC691C216A6FF67DE23 /* Supabase */,
 			);
 			productName = Flake;
 			productReference = 029B5B7733003927BA1A9B29 /* Flake.app */;
@@ -209,6 +266,7 @@
 			buildPhases = (
 				0157D71D043DF3A26FF06301 /* Sources */,
 				B3F5D6B1CE519AFAB2D698F5 /* Resources */,
+				97DAB0218F27B0C2E3C48EE5 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -216,6 +274,7 @@
 			);
 			name = FlakeMessages;
 			packageProductDependencies = (
+				F00EC31DA7DD72B6637A645B /* Supabase */,
 			);
 			productName = FlakeMessages;
 			productReference = 1F24D0E4A305882318B57FA5 /* FlakeMessages.appex */;
@@ -249,6 +308,9 @@
 			);
 			mainGroup = 8D6E023FA7B565288CA66191;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7E173352FECD6B729C7E18ED /* XCRemoteSwiftPackageReference "supabase-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6A184A963271CC92C66DD979 /* Products */;
 			projectDirPath = "";
@@ -286,10 +348,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				9F2BB4F96BC1DD4AFE3EF603 /* AvatarView.swift in Sources */,
+				D6F22C78E5B1C75F1C12FCE8 /* BackendModels.swift in Sources */,
 				A0C8B19C177BFC55A03E2443 /* MessagesViewController.swift in Sources */,
 				3C63DBE1AF84FEA0C1FF4E12 /* Models.swift in Sources */,
 				010D6394722212983B7F9C41 /* MoveCardView.swift in Sources */,
 				7CA57F688BB33B5388E8201E /* RSVPExtensionView.swift in Sources */,
+				094C4608662132A00B510921 /* SupabaseConfig.swift in Sources */,
 				BB55C9D876B66DB3B48D2DDC /* Theme.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -299,9 +363,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				310EC84A54E77BFB99531DF5 /* AppState.swift in Sources */,
+				25C425D6685779B74EF3FB38 /* AuthGateView.swift in Sources */,
 				292BB29B010E1AE8715B3343 /* AvatarView.swift in Sources */,
+				367AB3AB91B5F422AC1EFDFE /* BackendModels.swift in Sources */,
 				A1C71D377B89A29F4706C8C1 /* ContentView.swift in Sources */,
 				0E3F3D9E632D4E652E38B301 /* FlakeApp.swift in Sources */,
+				70BEDF33BAC4A2BBDB01F45C /* FlakeBackend.swift in Sources */,
 				73C53B2C12EE796F9BE5F625 /* FlakeNavBar.swift in Sources */,
 				71F44F6D0033547BD315EE15 /* GroupsView.swift in Sources */,
 				24F48354934270C297C7AFBA /* HomeView.swift in Sources */,
@@ -313,6 +380,7 @@
 				BD2B6558EC814D3C3AB90979 /* RSVPView.swift in Sources */,
 				09E1CD6280F7037D8A333C80 /* RecapView.swift in Sources */,
 				09ECE3FFBE607DE21CC49299 /* RoastsView.swift in Sources */,
+				E0232BA7856F05145794281D /* SupabaseConfig.swift in Sources */,
 				3BF1CC8B5558B9AC2D4CC947 /* Theme.swift in Sources */,
 				21E6555F49981CB1EE84C1D7 /* VoteView.swift in Sources */,
 			);
@@ -396,6 +464,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
+				CODE_SIGN_ENTITLEMENTS = FlakeMessages/FlakeMessages.entitlements;
 				INFOPLIST_FILE = FlakeMessages/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -482,6 +551,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "iMessage App Icon";
+				CODE_SIGN_ENTITLEMENTS = FlakeMessages/FlakeMessages.entitlements;
 				INFOPLIST_FILE = FlakeMessages/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -498,6 +568,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Flake/Flake.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Flake/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -514,6 +585,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Flake/Flake.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = Flake/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -557,6 +629,30 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7E173352FECD6B729C7E18ED /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		C3128BC691C216A6FF67DE23 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7E173352FECD6B729C7E18ED /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+		F00EC31DA7DD72B6637A645B /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7E173352FECD6B729C7E18ED /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = F51B0F3ECC6FD75703CD9737 /* Project object */;
 }

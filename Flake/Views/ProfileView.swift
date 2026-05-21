@@ -121,7 +121,24 @@ struct ProfileView: View {
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 120)
+                    .padding(.bottom, 10)
+
+                    if state.authStatus == .signedIn {
+                        Button {
+                            Task { await state.signOut() }
+                        } label: {
+                            Text("sign out")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(Color.white.opacity(0.5))
+                                .frame(maxWidth: .infinity)
+                                .padding(14)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 24)
+                    }
+
+                    Spacer(minLength: 0)
+                        .padding(.bottom, 120)
                 }
             }
         }
