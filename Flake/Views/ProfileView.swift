@@ -8,6 +8,19 @@ struct ProfileView: View {
         state.activeLeaderboardMembers.first { $0.id == state.currentUserID } ?? state.currentUser
     }
 
+    private var joinedString: String {
+        guard let date = state.currentUser.joinedAt ?? state.backendProfile?.createdAt else {
+            return ""
+        }
+        let f = DateFormatter()
+        f.dateFormat = "MMM ''yy"
+        return " · joined \(f.string(from: date).lowercased())"
+    }
+
+    private var seasonLabel: String {
+        "season \(String(format: "%02d", state.selectedGroup?.season ?? 1)) · to the crown"
+    }
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             ZStack(alignment: .top) {
@@ -31,7 +44,7 @@ struct ProfileView: View {
                         .font(.display(44))
                         .foregroundStyle(.white)
                         .padding(.bottom, 6)
-                    Text(user.handle + " · joined feb '24")
+                    Text(user.handle + joinedString)
                         .font(.mono(12))
                         .foregroundStyle(Color.white.opacity(0.45))
                         .padding(.bottom, 22)
@@ -64,7 +77,7 @@ struct ProfileView: View {
                     // Season meter
                     VStack(alignment: .leading, spacing: 10) {
                         HStack {
-                            Text("season 03 · to the crown")
+                            Text(seasonLabel)
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(Color.white.opacity(0.7))
                             Spacer()
@@ -92,9 +105,16 @@ struct ProfileView: View {
                         Text("cabinet")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(Color.white.opacity(0.7))
-                        FlowLayout(spacing: 6) {
-                            ForEach(user.badges, id: \.name) { badge in
-                                BadgeChip(name: badge.name, isGold: badge.isGold)
+                        if user.badges.isEmpty {
+                            Text("no badges yet. show up and earn them.")
+                                .font(.system(size: 13))
+                                .italic()
+                                .foregroundStyle(Color.white.opacity(0.3))
+                        } else {
+                            FlowLayout(spacing: 6) {
+                                ForEach(user.badges, id: \.name) { badge in
+                                    BadgeChip(name: badge.name, isGold: badge.isGold)
+                                }
                             }
                         }
                     }

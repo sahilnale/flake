@@ -7,18 +7,42 @@ import SwiftUI
 final class MessagesViewController: MSMessagesAppViewController {
 
     private var selectedMove: Move?
+    private var selectedInvite: GroupInvite?
+    private var showingInvitePicker = false
+
+    /// Groups available for invite — starts from cache, refreshed from Supabase on activation.
+    private var cachedGroups: [SharedGroupStore.Entry] = SharedGroupStore.load()
 
     // MARK: - Lifecycle
 
     override func willBecomeActive(with conversation: MSConversation) {
         super.willBecomeActive(with: conversation)
-        selectedMove = move(from: conversation.selectedMessage)
+        selectedMove   = move(from: conversation.selectedMessage)
+        selectedInvite = GroupInvite.fromMessageURL(conversation.selectedMessage?.url)
+        showingInvitePicker = false
+
+        // Seed from cache immediately, then refresh in background
+        cachedGroups = SharedGroupStore.load()
+        #if canImport(Supabase)
+        Task { [weak self] in
+            let fresh = await ExtensionGroupLoader.shared.loadFresh()
+            await MainActor.run { self?.cachedGroups = fresh }
+        }
+        #endif
+
         presentView(for: conversation, style: presentationStyle)
     }
 
     override func didSelect(_ message: MSMessage, conversation: MSConversation) {
         super.didSelect(message, conversation: conversation)
-        selectedMove = move(from: message) ?? selectedMove ?? Move.transcriptFallback
+        // Prefer invite card detection over move detection
+        if let invite = GroupInvite.fromMessageURL(message.url) {
+            selectedInvite = invite
+            selectedMove   = nil
+        } else {
+            selectedMove   = move(from: message)
+            selectedInvite = nil
+        }
         requestPresentationStyle(.expanded)
 
         if presentationStyle == .expanded {
@@ -29,7 +53,12 @@ final class MessagesViewController: MSMessagesAppViewController {
 
     override func willSelect(_ message: MSMessage, conversation: MSConversation) {
         super.willSelect(message, conversation: conversation)
-        selectedMove = move(from: message) ?? selectedMove ?? Move.transcriptFallback
+        if let invite = GroupInvite.fromMessageURL(message.url) {
+            selectedInvite = invite
+            selectedMove = nil
+            return
+        }
+        selectedMove = move(from: message)
     }
 
     override func willTransition(to presentationStyle: MSMessagesAppPresentationStyle) {
@@ -47,34 +76,73 @@ final class MessagesViewController: MSMessagesAppViewController {
 
     private func presentView(for conversation: MSConversation, style: MSMessagesAppPresentationStyle) {
         let selectedMessage = conversation.selectedMessage
-        if let move = move(from: selectedMessage) {
-            selectedMove = move
+
+        // ── Group invite card tapped ─────────────────────────────────────────
+        if let invite = selectedInvite ?? GroupInvite.fromMessageURL(selectedMessage?.url) {
+            selectedInvite = invite
+            if style == .expanded {
+                let vc = makeHostingController(for: GroupInviteReceivedView(
+                    invite: invite,
+                    onJoin: { [weak self] in
+                        self?.openInviteInApp(invite)
+                    },
+                    onDismiss: { [weak self] in
+                        self?.dismiss()
+                    }
+                ))
+                embed(vc)
+            } else {
+                // Compact — show minimal "tap to join" preview
+                let vc = makeHostingController(for: CompactInvitePreviewView(invite: invite) { [weak self] in
+                    self?.requestPresentationStyle(.expanded)
+                })
+                embed(vc)
+            }
+            return
         }
 
+        // ── Move RSVP / create flow ──────────────────────────────────────────
+        if let move = move(from: selectedMessage) { selectedMove = move }
+
         if style == .compact {
-            if let move = selectedMove {
+            if showingInvitePicker {
+                let vc = makeHostingController(for: GroupInvitePickerView(
+                    groups: cachedGroups,
+                    onSelect: { [weak self] entry in
+                        self?.sendInvite(for: entry, in: conversation)
+                    },
+                    onBack: { [weak self] in
+                        self?.showingInvitePicker = false
+                        self?.removeAllChildren()
+                        self?.presentView(for: conversation, style: .compact)
+                    }
+                ))
+                embed(vc)
+            } else if let move = selectedMove {
                 let vc = makeHostingController(for: CompactSelectedMoveView(move: move) { [weak self] in
                     self?.requestPresentationStyle(.expanded)
                 })
                 embed(vc)
             } else {
-                // Show the compact "create or preview" panel
                 let vc = CompactMoveViewController()
-                vc.onExpand = { [weak self] in
-                    self?.requestPresentationStyle(.expanded)
+                vc.onExpand = { [weak self] in self?.requestPresentationStyle(.expanded) }
+                vc.onInvite = { [weak self] in
+                    self?.showingInvitePicker = true
+                    self?.removeAllChildren()
+                    self?.presentView(for: conversation, style: .compact)
                 }
                 embed(vc)
             }
         } else {
-            // Expanded: show RSVP if there's a selected move message, else show create
-            if let move = move(from: selectedMessage) ?? selectedMove ?? selectedMessage.map({ _ in Move.transcriptFallback }) {
+            // Expanded
+            let fallbackMove: Move? = selectedMessage == nil ? selectedMove : nil
+            if let move = move(from: selectedMessage) ?? fallbackMove {
                 selectedMove = move
                 let rsvpVC = makeHostingController(for: MoveRSVPExtensionView(
                     move: move,
                     participants: participants(for: conversation),
                     currentParticipantID: conversation.localParticipantIdentifier
-                ) {
-                    [weak self] status in
+                ) { [weak self] status in
                     self?.send(rsvp: status, for: move, in: conversation)
                 })
                 embed(rsvpVC)
@@ -88,31 +156,45 @@ final class MessagesViewController: MSMessagesAppViewController {
         }
     }
 
-    private func move(from message: MSMessage?) -> Move? {
-        if let move = Move.fromMessageURL(message?.url) {
-            return move
-        }
+    // MARK: - Group invite sending
 
-        guard let layout = message?.layout as? MSMessageTemplateLayout,
-              let title = layout.caption,
-              !title.isEmpty else { return nil }
-
-        let location = layout.subcaption?
-            .components(separatedBy: "·")
-            .first?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        ?? "the move"
-
-        return Move(
-            id: UUID(),
-            title: title,
-            subtitle: "",
-            location: location,
-            date: Date(),
-            creatorID: UUID(),
-            rsvps: [:],
-            groupID: UUID()
+    private func sendInvite(for entry: SharedGroupStore.Entry, in conversation: MSConversation) {
+        let invite = GroupInvite(
+            threadKey: entry.threadKey,
+            groupName: entry.name,
+            memberCount: entry.memberCount
         )
+        guard let url = invite.asURL() else { return }
+
+        let message = MSMessage(session: MSSession())
+        let layout  = MSMessageTemplateLayout()
+        layout.image        = FlakeInviteArtwork.inviteCard(groupName: entry.name, memberCount: entry.memberCount)
+        layout.caption      = entry.name
+        layout.subcaption   = "\(entry.memberCount) member\(entry.memberCount == 1 ? "" : "s") · tap to join"
+        layout.trailingCaption = "flake."
+        message.summaryText = "join my flake group \"\(entry.name)\""
+        message.url         = url
+        message.layout      = layout
+
+        conversation.insert(message) { [weak self] error in
+            if error == nil {
+                DispatchQueue.main.async { self?.dismiss() }
+            }
+        }
+    }
+
+    private func openInviteInApp(_ invite: GroupInvite) {
+        // Open the main Flake app via deep link so the user can join the group.
+        // On iOS 14+ this works from an iMessage extension via extensionContext.
+        let deepLink = URL(string: "flake://join/\(invite.threadKey)")!
+        extensionContext?.open(deepLink, completionHandler: nil)
+    }
+
+    // MARK: - Move parsing
+
+    private func move(from message: MSMessage?) -> Move? {
+        if GroupInvite.fromMessageURL(message?.url) != nil { return nil }
+        return Move.fromMessageURL(message?.url)
     }
 
     // MARK: - Embed helpers
@@ -143,6 +225,7 @@ final class MessagesViewController: MSMessagesAppViewController {
 
     // MARK: - Sending messages
 
+    // Force: Always attach an image and minimize all layout fields for maximum card visibility in transcript.
     private func insert(move: Move, into conversation: MSConversation) {
         var move = move
         move.creatorID = conversation.localParticipantIdentifier
@@ -150,6 +233,17 @@ final class MessagesViewController: MSMessagesAppViewController {
         guard let url = move.asURL() else { return }
         let message = MSMessage(session: MSSession())
         let layout  = moveLayout(for: move, participants: participants(for: conversation))
+        
+        // Restore original caption, subcaption, trailingCaption logic
+        layout.caption = displayTitle(for: move).isEmpty ? "Move" : displayTitle(for: move)
+        layout.subcaption = "leader +25 · \(move.location) · tap to RSVP"
+        let trailing = responseSummary(for: move, participants: participants(for: conversation))
+        layout.trailingCaption = trailing.isEmpty ? "responses pending" : trailing
+        
+        if layout.image == nil {
+            layout.image = FlakeMessageArtwork.moveIcon()
+        }
+        
         message.summaryText = "\(displayTitle(for: move)) · group leader locked in"
         message.url    = url
         message.layout = layout
@@ -163,6 +257,7 @@ final class MessagesViewController: MSMessagesAppViewController {
         }
     }
 
+    // Force: Always attach an image and minimize all layout fields for maximum card visibility in transcript.
     private func send(rsvp: RSVPStatus, for move: Move, in conversation: MSConversation) {
         let participantID = conversation.localParticipantIdentifier
         var updatedMove = move
@@ -176,6 +271,17 @@ final class MessagesViewController: MSMessagesAppViewController {
             participants: participants(for: conversation),
             currentParticipantID: participantID
         )
+        
+        // Restore original caption, subcaption, trailingCaption logic
+        layout.caption = everyoneResponded(move: updatedMove, participants: participants(for: conversation)) ? "Everyone responded" : "RSVP \(rsvp.label)"
+        layout.subcaption = "\(displayTitle(for: updatedMove)) · \(rsvp.receiptSubcaption)"
+        let trailing = responseSummary(for: updatedMove, participants: participants(for: conversation))
+        layout.trailingCaption = trailing.isEmpty ? "responses pending" : trailing
+        
+        if layout.image == nil {
+            layout.image = FlakeMessageArtwork.moveIcon()
+        }
+        
         message.summaryText = "\(displayTitle(for: updatedMove)) · \(rsvp.label)"
         message.url    = url
         message.layout = layout
@@ -190,18 +296,32 @@ final class MessagesViewController: MSMessagesAppViewController {
     private func moveLayout(for move: Move, participants: [MessageParticipant]) -> MSMessageTemplateLayout {
         let layout = MSMessageTemplateLayout()
         layout.image = FlakeMessageArtwork.moveCard(move: move, selectedStatus: nil, participants: participants)
-        layout.caption = displayTitle(for: move)
-        layout.subcaption = "leader +25 · \(move.location) · tap to RSVP"
-        layout.trailingCaption = responseSummary(for: move, participants: participants)
+        // Defensive: fallback captions
+        let caption = displayTitle(for: move)
+        layout.caption = caption.isEmpty ? "Move" : caption
+        
+        let subcaptionFallback = "leader +25 · \(move.location) · tap to RSVP"
+        layout.subcaption = layout.subcaption?.isEmpty == false ? layout.subcaption : subcaptionFallback
+        layout.subcaption = layout.subcaption ?? subcaptionFallback
+        
+        let trailing = responseSummary(for: move, participants: participants)
+        layout.trailingCaption = trailing.isEmpty ? "responses pending" : trailing
         return layout
     }
 
     private func rsvpLayout(for move: Move, status: RSVPStatus, participants: [MessageParticipant], currentParticipantID: UUID) -> MSMessageTemplateLayout {
         let layout = MSMessageTemplateLayout()
         layout.image = FlakeMessageArtwork.moveCard(move: move, selectedStatus: status, participants: participants)
-        layout.caption = everyoneResponded(move: move, participants: participants) ? "Everyone responded" : "RSVP \(status.receiptAction)"
-        layout.subcaption = "\(displayTitle(for: move)) · \(status.receiptSubcaption)"
-        layout.trailingCaption = responseSummary(for: move, participants: participants)
+        
+        let captionFallback = everyoneResponded(move: move, participants: participants) ? "Everyone responded" : "RSVP \(status.receiptAction)"
+        layout.caption = captionFallback.isEmpty ? "RSVP" : captionFallback
+        
+        let subcaptionFallback = "\(displayTitle(for: move)) · \(status.receiptSubcaption)"
+        layout.subcaption = subcaptionFallback.isEmpty ? "\(displayTitle(for: move))" : subcaptionFallback
+        
+        let trailingFallback = responseSummary(for: move, participants: participants)
+        layout.trailingCaption = trailingFallback.isEmpty ? "responses pending" : trailingFallback
+        
         return layout
     }
 
@@ -460,13 +580,17 @@ private extension UIColor {
 
 final class CompactMoveViewController: UIViewController {
     var onExpand: (() -> Void)?
+    var onInvite: (() -> Void)?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = UIColor(Color.flakeBG)
         let hostingVC = UIHostingController(
-            rootView: CompactBubbleView { [weak self] in self?.onExpand?() }
-                .environment(\.flakeTheme, .sunset)
+            rootView: CompactBubbleView(
+                onExpand: { [weak self] in self?.onExpand?() },
+                onInvite: { [weak self] in self?.onInvite?() }
+            )
+            .environment(\.flakeTheme, .sunset)
         )
         addChild(hostingVC)
         hostingVC.view.frame = view.bounds

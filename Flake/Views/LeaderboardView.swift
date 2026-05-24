@@ -9,9 +9,9 @@ struct LeaderboardView: View {
 
     var sortedMembers: [Member] {
         switch selectedTab {
-        case 1: return state.activeLeaderboardMembers.sorted { $0.score > $1.score }
-        case 2: return state.activeLeaderboardMembers.sorted { $0.showRate > $1.showRate }
-        default: return state.activeLeaderboardMembers.sorted { $0.score > $1.score }
+        case 1:  return state.activeLeaderboardMembers.sorted { $0.score > $1.score }
+        case 2:  return state.activeLeaderboardMembers.sorted { $0.showRate > $1.showRate }
+        default: return state.seasonLeaderboardMembers.sorted { $0.score > $1.score }
         }
     }
 
@@ -22,7 +22,7 @@ struct LeaderboardView: View {
 
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
-                        EyebrowLabel(text: "season \(String(format: "%02d", state.selectedGroup?.season ?? 3)) · week \(state.season.currentWeek) of \(state.season.totalWeeks)")
+                        EyebrowLabel(text: "season \(String(format: "%02d", state.selectedGroup?.season ?? 1)) · week \(state.currentSeasonWeek) of \(state.currentSeasonTotalWeeks)")
                         Spacer()
                         Button {
                             withAnimation(.easeInOut(duration: 0.2)) {
@@ -93,7 +93,8 @@ struct LeaderboardView: View {
                             LeaderboardRow(rank: rank, member: member, isTop: isTop,
                                           isBottom: isBottom, isYou: isYou,
                                           displayScore: selectedTab == 2 ? Int(member.showRate * 100) : member.score,
-                                          scoreSuffix: selectedTab == 2 ? "%" : "")
+                                          scoreSuffix: selectedTab == 2 ? "%" : "",
+                                          weeklyDelta: isYou ? state.weeklyScoreDelta : nil)
                         }
                     }
                     .padding(.bottom, 120)
@@ -116,6 +117,7 @@ private struct LeaderboardRow: View {
     let isYou: Bool
     let displayScore: Int
     let scoreSuffix: String
+    var weeklyDelta: Int? = nil
 
     @Environment(\.flakeTheme) private var theme
 
@@ -135,12 +137,12 @@ private struct LeaderboardRow: View {
                         Text(member.name)
                             .font(.system(size: 14, weight: .medium))
                             .foregroundStyle(.white)
-                        if isYou {
-                            Text("+12 this week")
+                        if let delta = weeklyDelta, delta != 0 {
+                            Text(delta > 0 ? "+\(delta) this week" : "−\(abs(delta)) this week")
                                 .font(.mono(10))
-                                .foregroundStyle(Color.white.opacity(0.4))
+                                .foregroundStyle(delta > 0 ? theme.g1.opacity(0.7) : Color(hex: "ff5a7a").opacity(0.7))
                         }
-                        if isBottom {
+                        if isBottom && weeklyDelta == nil {
                             Text("flake of the szn")
                                 .font(.mono(10))
                                 .foregroundStyle(Color.white.opacity(0.4))

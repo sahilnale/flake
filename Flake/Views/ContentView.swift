@@ -11,7 +11,9 @@ struct ContentView: View {
             Color.flakeBG.ignoresSafeArea()
 
             Group {
-                if state.shouldShowAuthGate {
+                if state.authStatus == .restoringSession || state.isBootstrappingData {
+                    SessionRestoreView()
+                } else if state.shouldShowAuthGate {
                     AuthGateView()
                 } else if let feature = state.featureScreen {
                     switch feature {
@@ -29,10 +31,20 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            if state.featureScreen == nil && !state.shouldShowAuthGate {
+            if state.featureScreen == nil && !state.shouldShowAuthGate && !state.isBootstrappingData {
                 FlakeNavBar(selected: $state.selectedTab)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 8)
+            }
+
+            // Sync error banner — only shown when signed in (not an auth error)
+            if state.authStatus == .signedIn, let msg = state.authErrorMessage {
+                SyncErrorBanner(message: msg) {
+                    state.authErrorMessage = nil
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(99)
+                .frame(maxHeight: .infinity, alignment: .top)
             }
         }
         .sheet(isPresented: $state.rsvpSheetVisible) {
@@ -638,3 +650,39 @@ private struct MoveField: View {
             .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }
+
+// MARK: - Sync error banner
+
+private struct SyncErrorBanner: View {
+    let message: String
+    let onDismiss: () -> Void
+
+    @Environment(\.flakeTheme) private var theme
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(theme.bad)
+
+            Text(message)
+                .font(.system(size: 12))
+                .foregroundStyle(Color.white.opacity(0.85))
+                .lineLimit(2)
+
+            Spacer()
+
+            Button(action: onDismiss) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.5))
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color(hex: "1a0a0a"))
+        .overlay(Rectangle().frame(height: 1).foregroundStyle(theme.bad.opacity(0.35)), alignment: .bottom)
+        .padding(.top, 50) // below the status bar notch
+    }
+}
+

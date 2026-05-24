@@ -32,6 +32,13 @@ targets:
           - Theme.swift
           - Components/AvatarView.swift
       - path: Shared
+    entitlements:
+      path: Flake/Flake.entitlements
+      properties:
+        com.apple.developer.applesignin:
+          - Default
+        com.apple.security.application-groups:
+          - group.com.flake.app
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.flake.app
@@ -50,6 +57,13 @@ targets:
     sources:
       - path: FlakeMessages
       - path: Shared
+    entitlements:
+      path: FlakeMessages/FlakeMessages.entitlements
+      properties:
+        com.apple.developer.applesignin:
+          - Default
+        com.apple.security.application-groups:
+          - group.com.flake.app
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.flake.app.messages

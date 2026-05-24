@@ -62,6 +62,7 @@ struct Member: Identifiable, Codable, Hashable {
     var flakeCount: Int
     var showCount: Int
     var badges: [Badge]
+    var joinedAt: Date?
 
     struct Badge: Codable, Hashable {
         var name: String
@@ -138,12 +139,17 @@ struct FlakeGroup: Identifiable, Codable {
     var name: String
     var members: [Member]
     var moves: [Move]
+    /// The person who created the group — has admin powers (season config, settle attendance).
+    var groupLeaderID: UUID?
     var season: Int
+    var seasonWeeks: Int
+    var seasonStartedAt: Date?
     var userRank: Int
     var userScore: Int
     var userScoreGoal: Int
     var ranksSubtitle: String
     var nextSummary: String
+    var threadKey: String? = nil
 
     var currentMove: Move? {
         moves
@@ -163,10 +169,11 @@ struct Roast: Identifiable {
     var reactions: [Reaction]
 
     struct Reaction: Identifiable {
-        let id = UUID()
         var emoji: String
         var count: Int
         var isHot: Bool
+        /// Stable — emoji string is unique per roast card.
+        var id: String { emoji }
     }
 }
 
@@ -214,6 +221,50 @@ struct Season: Codable {
     var biggestFlake: Member?
 }
 
+// MARK: - Group Invite URL encoding (shared between app & extension)
+
+struct GroupInvite {
+    let threadKey: String
+    let groupName: String
+    let memberCount: Int
+
+    func asURL() -> URL? {
+        var components = URLComponents()
+        components.scheme = "flake"
+        components.host   = "group-invite"
+        components.queryItems = [
+            URLQueryItem(name: "kind",    value: "invite"),
+            URLQueryItem(name: "key",     value: threadKey),
+            URLQueryItem(name: "name",    value: groupName),
+            URLQueryItem(name: "members", value: String(memberCount)),
+        ]
+        return components.url
+    }
+
+    static func fromMessageURL(_ url: URL?) -> GroupInvite? {
+        guard let url,
+              url.scheme == "flake"
+        else { return nil }
+        if url.host == "group-invite",
+           let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems {
+            func q(_ n: String) -> String? { items.first { $0.name == n }?.value }
+            guard let key = q("key"), let name = q("name") else { return nil }
+            let members = q("members").flatMap(Int.init) ?? 0
+            return GroupInvite(threadKey: key, groupName: name, memberCount: members)
+        }
+
+        // Backward compatibility: older invite links may use flake://join/THREADKEY.
+        if url.host == "join" {
+            let key = (url.pathComponents.dropFirst().first ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .uppercased()
+            guard !key.isEmpty else { return nil }
+            return GroupInvite(threadKey: key, groupName: "group invite", memberCount: 0)
+        }
+        return nil
+    }
+}
+
 // MARK: - Move URL encoding (shared between app & extension)
 
 extension Move {
@@ -240,6 +291,7 @@ extension Move {
         components.scheme = Move.urlScheme
         components.host   = "move"
         var queryItems = [
+            URLQueryItem(name: "kind",     value: "move"),
             URLQueryItem(name: "id",       value: id.uuidString),
             URLQueryItem(name: "title",    value: title),
             URLQueryItem(name: "location", value: location),
@@ -279,6 +331,7 @@ extension Move {
 
     static func fromMessageURL(_ url: URL?) -> Move? {
         guard let url else { return nil }
+        if GroupInvite.fromMessageURL(url) != nil { return nil }
         if let move = fromURL(url) { return move }
 
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false),

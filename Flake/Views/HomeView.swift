@@ -11,8 +11,13 @@ struct HomeView: View {
     private var myStatus: RSVPStatus {
         state.myRSVP ?? move.rsvps[state.currentUserID] ?? .silent
     }
-    private var isGroupLeader: Bool {
+    /// True when the current user called this specific move.
+    private var isMoveLeader: Bool {
         move.creatorID == state.currentUserID
+    }
+    /// True when the current user created the group itself.
+    private var isGroupAdmin: Bool {
+        state.selectedGroup?.groupLeaderID == state.currentUserID
     }
     private var lockedInCount: Int {
         var count = move.lockedInCount
@@ -28,6 +33,13 @@ struct HomeView: View {
     }
 
     var body: some View {
+        if state.groups.isEmpty {
+            NoGroupsView()
+        } else { homeContent }
+    }
+
+    @ViewBuilder
+    private var homeContent: some View {
         ScrollView(showsIndicators: false) {
             ZStack(alignment: .top) {
                 OmbreBackground(style: .top)
@@ -133,8 +145,8 @@ struct HomeView: View {
 
                     // Sub
                     Group {
-                        Text(move.subtitle.isEmpty ? "the standing one. " : "\(move.subtitle) ") + Text(isGroupLeader ? "you called this one" : "group leader called this one").bold()
-                        + Text(isGroupLeader ? "  ★ +25 leader bonus · −25 if you flake" : "  ★ leader gets +25")
+                        Text(move.subtitle.isEmpty ? "the standing one. " : "\(move.subtitle) ") + Text(isMoveLeader ? "you called this one" : "move leader called this one").bold()
+                        + Text(isMoveLeader ? "  ★ +25 move bonus · −25 if you flake" : "  ★ move leader gets +25")
                             .font(.system(size: 10, weight: .bold, design: .monospaced))
                             .foregroundStyle(theme.g3)
                         + Text("\n\(moveDetail)")
@@ -144,7 +156,28 @@ struct HomeView: View {
                     .foregroundStyle(Color.white.opacity(0.65))
                     .lineSpacing(4)
                     .padding(.horizontal, 24)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 10)
+
+                    // Date chip
+                    if move.date >= Date() && !move.isSettled {
+                        HStack(spacing: 6) {
+                            Text(specificDateTime(move.date))
+                                .foregroundStyle(.white.opacity(0.9))
+                            Text("·")
+                                .foregroundStyle(.white.opacity(0.3))
+                            Text(relativeClose(move.date))
+                                .foregroundStyle(theme.g1)
+                        }
+                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.white.opacity(0.1))
+                        .clipShape(Capsule())
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 16)
+                    } else {
+                        Spacer().frame(height: 10)
+                    }
 
                     // Countdown
                     let tc = timeComponents
@@ -195,6 +228,7 @@ struct HomeView: View {
                     .padding(.horizontal, 24)
 
                     if let vote = state.activeExcusedVote {
+                        let isMyExcusedRequest = vote.petitioner.id == state.currentUserID
                         Button {
                             state.voteSheetVisible = true
                         } label: {
@@ -209,7 +243,9 @@ struct HomeView: View {
                                 .clipShape(Circle())
 
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text("\(vote.petitioner.name) wants an excused absence")
+                                    Text(isMyExcusedRequest
+                                         ? "you requested an excused absence"
+                                         : "\(vote.petitioner.name) wants an excused absence")
                                         .font(.system(size: 13, weight: .semibold))
                                         .foregroundStyle(.white)
                                     Text(voteLine(for: vote))
@@ -279,7 +315,7 @@ struct HomeView: View {
                         .padding(.top, 10)
                     }
 
-                    if isGroupLeader {
+                    if isMoveLeader {
                         Button {
                             state.attendanceSheetVisible = true
                         } label: {
@@ -317,16 +353,13 @@ struct HomeView: View {
     }
 
     private var moveDetail: String {
-        switch state.selectedGroup?.name {
-        case "house":
-            return "quorum already hit. kira's on dessert, gus is on wine."
-        case "college group chat":
-            return "last hangout: 4 months ago. devon keeps trying. they remember."
-        case "soccer sundays":
-            return "10am at field 3. cleats, shin guards, a will to live."
-        default:
-            return "nina's bringing the lemon thing. iggy always says he's maybe coming."
+        if move.isSettled {
+            return "attendance is settled. points are locked."
         }
+        if move.date >= Date() {
+            return "tap RSVP to lock in."
+        }
+        return "started \(specificDateTime(move.date)). update RSVP if plans changed."
     }
 
     private func shortDate(_ date: Date) -> String {
@@ -336,11 +369,19 @@ struct HomeView: View {
     }
 
     private func relativeClose(_ date: Date) -> String {
-        let minutes = max(1, Int(date.timeIntervalSinceNow / 60))
-        if minutes >= 60 {
-            return "in \(minutes / 60)h"
-        }
+        let diff = date.timeIntervalSinceNow
+        let minutes = max(1, Int(diff / 60))
+        let hours = minutes / 60
+        let days = hours / 24
+        if days >= 1 { return "in \(days)d" }
+        if hours >= 1 { return "in \(hours)h" }
         return "in \(minutes)m"
+    }
+
+    private func specificDateTime(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE MMM d 'at' h:mma"
+        return formatter.string(from: date).lowercased()
     }
 
     private func voteLine(for vote: ExcusedVote) -> String {
@@ -477,6 +518,80 @@ private struct LineupRow: View {
         .padding(.vertical, 11)
         .overlay(alignment: .bottom) {
             Color.white.opacity(0.06).frame(height: 1)
+        }
+    }
+}
+
+// MARK: - NoGroupsView
+
+private struct NoGroupsView: View {
+    @Environment(AppState.self) private var state
+    @Environment(\.flakeTheme) private var theme
+
+    @State private var showJoin = false
+
+    var body: some View {
+        ZStack {
+            Color.flakeBG.ignoresSafeArea()
+            OmbreBackground(style: .center)
+
+            VStack(alignment: .leading, spacing: 0) {
+                Spacer()
+
+                (Text("no\n").font(.display(64)) + Text("moves.").font(.display(64)).italic().foregroundStyle(theme.gradient2))
+                    .foregroundStyle(.white)
+                    .lineSpacing(-8)
+                    .padding(.bottom, 12)
+
+                Text("start a group with your crew, or enter a code to join one someone shared.")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.white.opacity(0.55))
+                    .lineSpacing(3)
+                    .padding(.bottom, 32)
+
+                // Primary — join with a code
+                Button { showJoin = true } label: {
+                    HStack {
+                        Text("join a group")
+                            .font(.system(size: 16, weight: .semibold))
+                        Spacer()
+                        Text("→").font(.system(size: 18))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(18)
+                    .background(theme.gradient2)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .shadow(color: theme.g1.opacity(0.3), radius: 16, y: 8)
+                }
+                .buttonStyle(.plain)
+                .padding(.bottom, 10)
+
+                // Secondary — create a new one
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        state.featureScreen = .groups
+                    }
+                } label: {
+                    HStack {
+                        Text("create a group")
+                            .font(.system(size: 15, weight: .medium))
+                        Spacer()
+                        Text("→").font(.system(size: 15))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(16)
+                    .background(Color.white.opacity(0.08))
+                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.1), lineWidth: 1))
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+            }
+            .padding(.horizontal, 24)
+        }
+        .sheet(isPresented: $showJoin) {
+            JoinGroupSheet()
         }
     }
 }

@@ -3,6 +3,71 @@ import SwiftUI
 // MARK: - Compact bubble (app strip / drawer)
 
 struct CompactBubbleView: View {
+    let onExpand: () -> Void
+    let onInvite: () -> Void
+    @Environment(\.flakeTheme) private var theme
+
+    var body: some View {
+        HStack(spacing: 10) {
+            // App icon
+            ZStack {
+                theme.gradient
+                Text("f.")
+                    .font(.system(size: 18, weight: .bold, design: .serif))
+                    .italic()
+                    .foregroundStyle(.white)
+            }
+            .frame(width: 44, height: 44)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+
+            // Send a move
+            Button(action: onExpand) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("send a move")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text("create RSVP card →")
+                        .font(.system(size: 11))
+                        .foregroundStyle(Color.white.opacity(0.45))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(Color.white.opacity(0.06))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.1), lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+
+            // Invite friends
+            Button(action: onInvite) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("invite friends")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(.white)
+                    Text("add to group →")
+                        .font(.system(size: 11))
+                        .foregroundStyle(theme.g1.opacity(0.8))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(theme.g1.opacity(0.1))
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(theme.g1.opacity(0.25), lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.flakeBG)
+    }
+}
+
+// MARK: - Compact invite preview (recipient compact view)
+
+struct CompactInvitePreviewView: View {
+    let invite: GroupInvite
     let onTap: () -> Void
     @Environment(\.flakeTheme) private var theme
 
@@ -10,26 +75,29 @@ struct CompactBubbleView: View {
         Button(action: onTap) {
             HStack(spacing: 12) {
                 ZStack {
-                    theme.gradient
-                    Text("f.")
-                        .font(.system(size: 18, weight: .bold, design: .serif))
-                        .italic()
-                        .foregroundStyle(.white)
+                    LinearGradient(
+                        colors: [theme.g1, theme.g2],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                    Text("👋")
+                        .font(.system(size: 20))
                 }
                 .frame(width: 44, height: 44)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("flake.")
-                        .font(.system(size: 15, weight: .semibold))
+                    Text("group invite: \(invite.groupName)")
+                        .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(.white)
-                    Text("send a move →")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Color.white.opacity(0.5))
+                        .lineLimit(1)
+                    Text("tap to join in flake →")
+                        .font(.system(size: 11))
+                        .foregroundStyle(theme.g1.opacity(0.9))
                 }
                 Spacer()
             }
-            .padding(16)
+            .padding(14)
             .background(Color.flakeBG)
         }
         .buttonStyle(.plain)

@@ -8,6 +8,7 @@ struct AuthGateView: View {
     @Environment(\.flakeTheme) private var theme
 
     @State private var currentNonce = ""
+    @State private var isAuthorizing = false
 
     var body: some View {
         ZStack {
@@ -16,9 +17,6 @@ struct AuthGateView: View {
 
             VStack(alignment: .leading, spacing: 0) {
                 Spacer()
-
-                EyebrowLabel(text: "supabase connected", color: theme.g3)
-                    .padding(.bottom, 14)
 
                 (Text("flake\n").font(.display(64)) + Text("keeps score.").font(.display(54)).italic().foregroundStyle(theme.gradient2))
                     .foregroundStyle(.white)
@@ -34,6 +32,8 @@ struct AuthGateView: View {
                 SignInWithAppleButton(.signIn) { request in
                     let nonce = AppleSignInNonce.random()
                     currentNonce = nonce
+                    state.pendingAppleSignInNonce = nonce
+                    isAuthorizing = true
                     request.requestedScopes = [.fullName, .email]
                     request.nonce = AppleSignInNonce.sha256(nonce)
                 } onCompletion: { result in
@@ -42,19 +42,8 @@ struct AuthGateView: View {
                 .signInWithAppleButtonStyle(.white)
                 .frame(height: 54)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
-                .disabled(state.authStatus == .signingIn)
+                .disabled(state.authStatus == .signingIn || isAuthorizing)
                 .padding(.bottom, 10)
-
-                Button {
-                    state.continueWithSampleData()
-                } label: {
-                    Text("continue with sample data")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color.white.opacity(0.52))
-                        .frame(maxWidth: .infinity)
-                        .padding(14)
-                }
-                .buttonStyle(.plain)
 
                 if let message = state.authErrorMessage {
                     Text(message)
@@ -77,6 +66,14 @@ struct AuthGateView: View {
     private func handleAppleResult(_ result: Result<ASAuthorization, Error>) {
         switch result {
         case .success(let authorization):
+            let nonce = state.pendingAppleSignInNonce ?? currentNonce
+            state.pendingAppleSignInNonce = nil
+            currentNonce = ""
+            isAuthorizing = false
+            guard !nonce.isEmpty else {
+                state.authErrorMessage = "Sign-in session expired. Please try again."
+                return
+            }
             guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
                   let tokenData = credential.identityToken,
                   let token = String(data: tokenData, encoding: .utf8) else {
@@ -89,11 +86,14 @@ struct AuthGateView: View {
             Task {
                 await state.signInWithApple(
                     identityToken: token,
-                    nonce: currentNonce,
+                    nonce: nonce,
                     displayName: displayName
                 )
             }
         case .failure(let error):
+            state.pendingAppleSignInNonce = nil
+            currentNonce = ""
+            isAuthorizing = false
             state.authErrorMessage = error.localizedDescription
         }
     }

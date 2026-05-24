@@ -4,8 +4,7 @@ struct RoastsView: View {
     @Environment(AppState.self) private var state
     @Environment(\.flakeTheme) private var theme
 
-    @State private var intensity: Double = 2
-    @State private var roasts: [Roast] = Roast.samples(intensity: 2)
+    private var roasts: [Roast] { state.generateRoasts(intensity: 3) }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -17,38 +16,9 @@ struct RoastsView: View {
                         (Text("the ").font(.display(48)) + Text("receipts.").font(.display(48)).italic().foregroundStyle(theme.gradient2))
                             .foregroundStyle(.white)
                         Spacer()
-                        Text("12 new")
-                            .font(.mono(11))
-                            .foregroundStyle(Color.white.opacity(0.45))
-                            .overlay(alignment: .leading) {
-                                Text("12").font(.mono(11, weight: .bold)).foregroundStyle(theme.g1)
-                            }
                     }
                     .padding(.top, 60)
                     .padding(.bottom, 22)
-
-                    // Intensity dial
-                    VStack(alignment: .leading, spacing: 8) {
-                        EyebrowLabel(text: "roast intensity")
-                        Slider(value: $intensity, in: 0...3, step: 1)
-                            .tint(theme.g1)
-                            .onChange(of: intensity) { _, v in
-                                withAnimation { roasts = Roast.samples(intensity: Int(v)) }
-                            }
-                        HStack {
-                            ForEach(["polite", "nudgy", "spicy", "unhinged"], id: \.self) { l in
-                                Text(l)
-                                    .font(.mono(9))
-                                    .tracking(0.6)
-                                    .textCase(.uppercase)
-                                    .foregroundStyle(Color.white.opacity(0.4))
-                                    .frame(maxWidth: .infinity)
-                            }
-                        }
-                    }
-                    .padding(14)
-                    .glassCard(radius: 14, padding: .init(top: 14, leading: 14, bottom: 14, trailing: 14))
-                    .padding(.bottom, 24)
 
                     // Roast list
                     VStack(spacing: 0) {
@@ -95,7 +65,7 @@ private struct RoastRow: View {
             // Reactions
             HStack(spacing: 6) {
                 ForEach(roast.reactions) { reaction in
-                    ReactionChip(reaction: reaction)
+                    ReactionChip(reaction: reaction, targetID: roast.id)
                 }
             }
         }
@@ -108,40 +78,47 @@ private struct RoastRow: View {
 
 private struct ReactionChip: View {
     let reaction: Roast.Reaction
+    let targetID: UUID
+    @Environment(AppState.self) private var state
     @Environment(\.flakeTheme) private var theme
-    @State private var count: Int?
     @State private var bumped = false
 
     var body: some View {
         Button {
-            count = currentCount + 1
-            withAnimation(.spring(response: 0.24, dampingFraction: 0.45)) {
-                bumped = true
-            }
+            state.toggleRoastReaction(targetID: targetID, emoji: reaction.emoji)
+            withAnimation(.spring(response: 0.24, dampingFraction: 0.45)) { bumped = true }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                withAnimation(.spring(response: 0.24, dampingFraction: 0.7)) {
-                    bumped = false
-                }
+                withAnimation(.spring(response: 0.24, dampingFraction: 0.7)) { bumped = false }
             }
         } label: {
             HStack(spacing: 4) {
                 Text(reaction.emoji).font(.system(size: 12))
-                Text("\(currentCount)")
+                Text("\(liveCount)")
                     .font(.mono(10, weight: .semibold))
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(reaction.isHot ? AnyShapeStyle(LinearGradient(colors: [theme.g1.opacity(0.18), theme.g2.opacity(0.1)], startPoint: .leading, endPoint: .trailing)) : AnyShapeStyle(Color.white.opacity(0.06)))
-            .foregroundStyle(reaction.isHot ? theme.g1 : Color.white.opacity(0.7))
-            .overlay(Capsule().stroke(reaction.isHot ? theme.g1.opacity(0.35) : Color.white.opacity(0.08), lineWidth: 1))
+            .background(
+                isActive
+                    ? AnyShapeStyle(LinearGradient(colors: [theme.g1.opacity(0.22), theme.g2.opacity(0.12)], startPoint: .leading, endPoint: .trailing))
+                    : AnyShapeStyle(Color.white.opacity(0.06))
+            )
+            .foregroundStyle(isActive ? theme.g1 : Color.white.opacity(0.7))
+            .overlay(Capsule().stroke(isActive ? theme.g1.opacity(0.35) : Color.white.opacity(0.08), lineWidth: 1))
             .clipShape(Capsule())
             .scaleEffect(bumped ? 1.18 : 1)
         }
         .buttonStyle(.plain)
     }
 
-    private var currentCount: Int {
-        count ?? reaction.count
+    /// Count from AppState (live), falls back to the seeded value from generateRoasts.
+    private var liveCount: Int {
+        state.roastReactionCounts[targetID]?[reaction.emoji] ?? reaction.count
+    }
+
+    /// True if the current user has reacted with this emoji.
+    private var isActive: Bool {
+        state.myRoastReactions[targetID]?.contains(reaction.emoji) == true
     }
 }
 

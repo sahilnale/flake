@@ -4,6 +4,84 @@ struct RecapView: View {
     @Environment(AppState.self) private var state
     @Environment(\.flakeTheme) private var theme
 
+    // MARK: - Derived data
+
+    private var group: FlakeGroup? { state.selectedGroup }
+    private var members: [Member]  { state.activeLeaderboardMembers.sorted { $0.score > $1.score } }
+
+    private var seasonNumber: Int  { group?.season ?? 1 }
+    private var totalWeeks: Int    { group?.seasonWeeks ?? 12 }
+    private var memberCount: Int   { group?.members.count ?? 0 }
+
+    private var champion:    Member? { state.season.champion }
+    private var biggestFlake: Member? { state.season.biggestFlake }
+
+    // Stat string helpers
+    private func statLine(_ m: Member) -> String {
+        let total = m.showCount + m.flakeCount
+        let scoreStr = m.score < 0 ? "−\(abs(m.score)) pts" : "\(m.score) pts"
+        return "\(m.showCount)/\(total) shows · \(m.flakeCount) flakes · \(scoreStr)"
+    }
+
+    // Number → written word (1-20, digits beyond that)
+    private func wordify(_ n: Int) -> String {
+        let words = ["one","two","three","four","five","six","seven",
+                     "eight","nine","ten","eleven","twelve","thirteen",
+                     "fourteen","fifteen","sixteen","seventeen","eighteen","nineteen","twenty"]
+        return n >= 1 && n <= 20 ? words[n - 1] : "\(n)"
+    }
+
+    private var subtitle: String {
+        let w = wordify(totalWeeks)
+        let f = memberCount == 1 ? "one friend" : "\(wordify(memberCount)) friends"
+        return "\(w) weeks. \(f). one trophy. one cautionary tale."
+    }
+
+    // MARK: - Superlatives
+
+    private var mostReliable: String {
+        let candidates = members.filter { $0.showCount + $0.flakeCount > 0 }
+        guard let m = candidates.max(by: {
+            let ra = Double($0.showCount) / Double($0.showCount + $0.flakeCount)
+            let rb = Double($1.showCount) / Double($1.showCount + $1.flakeCount)
+            return ra < rb || (ra == rb && $0.showCount < $1.showCount)
+        }) else { return "—" }
+        let total = m.showCount + m.flakeCount
+        return "\(m.name) · \(m.showCount)/\(total) shows"
+    }
+
+    private var theCutch: String {
+        guard let g = group, !g.moves.isEmpty else { return "—" }
+        var counts: [UUID: Int] = [:]
+        for move in g.moves { counts[move.creatorID, default: 0] += 1 }
+        guard let topEntry = counts.max(by: { $0.value < $1.value }),
+              let m = members.first(where: { $0.id == topEntry.key }) else { return "—" }
+        let n = topEntry.value
+        return "\(m.name) · called \(n) move\(n == 1 ? "" : "s")"
+    }
+
+    private var fullSender: String {
+        guard let g = group else { return "—" }
+        var counts: [UUID: Int] = [:]
+        for move in g.moves {
+            for (uid, rsvp) in move.rsvps where rsvp == .sendingIt {
+                counts[uid, default: 0] += 1
+            }
+        }
+        guard let topEntry = counts.max(by: { $0.value < $1.value }),
+              let m = members.first(where: { $0.id == topEntry.key }) else { return "—" }
+        let n = topEntry.value
+        return "\(m.name) · \(n) \"maybe\"s"
+    }
+
+    private var runnerUp: String {
+        guard members.count >= 2 else { return "—" }
+        let m = members[1]
+        return "\(m.name) · \(m.score) pts"
+    }
+
+    // MARK: - Body
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             ZStack(alignment: .top) {
@@ -30,17 +108,21 @@ struct RecapView: View {
                         }
                         .buttonStyle(.plain)
 
-                        EyebrowLabel(text: "★ season 03 · final", color: theme.g3)
+                        EyebrowLabel(
+                            text: "★ season \(String(format: "%02d", seasonNumber)) · final",
+                            color: theme.g3
+                        )
                     }
                     .padding(.top, 60)
                     .padding(.bottom, 12)
 
-                    (Text("that's a\n").font(.display(72)) + Text("wrap.").font(.display(72)).italic().foregroundStyle(theme.gradient))
+                    (Text("that's a\n").font(.display(72)) +
+                     Text("wrap.").font(.display(72)).italic().foregroundStyle(theme.gradient))
                         .foregroundStyle(.white)
                         .lineSpacing(-8)
                         .padding(.bottom, 10)
 
-                    Text("twelve weeks. nine friends. one trophy. one cautionary tale.")
+                    Text(subtitle)
                         .font(.system(size: 14))
                         .foregroundStyle(Color.white.opacity(0.6))
                         .lineSpacing(3)
@@ -49,8 +131,8 @@ struct RecapView: View {
                     // Champion
                     AwardCard(
                         label: "★ champion of the season",
-                        name: state.season.champion?.name ?? "luca",
-                        stat: "11/12 shows · 0 flakes · 412 pts",
+                        name: champion?.name ?? "—",
+                        stat: champion.map { statLine($0) } ?? "no settled moves yet",
                         isWinner: true
                     )
                     .padding(.bottom, 12)
@@ -58,8 +140,8 @@ struct RecapView: View {
                     // Biggest flake
                     AwardCard(
                         label: "flake of the season",
-                        name: state.season.biggestFlake?.name ?? "mo",
-                        stat: "2/12 shows · 6 flakes · −14 pts",
+                        name: biggestFlake?.name ?? "—",
+                        stat: biggestFlake.map { statLine($0) } ?? "no settled moves yet",
                         isWinner: false
                     )
                     .padding(.bottom, 28)
@@ -67,10 +149,10 @@ struct RecapView: View {
                     EyebrowLabel(text: "superlatives").padding(.bottom, 8)
 
                     VStack(spacing: 0) {
-                        SuperlativeRow(title: "most reliable",  isItalic: true,  who: "nina · 11/12 shows")
-                        SuperlativeRow(title: "the clutch",     isItalic: false, italicWord: "clutch", who: "maya · saved 3 moves")
-                        SuperlativeRow(title: "full sender",    isItalic: true,  who: "iggy · 14 \"maybe\"s")
-                        SuperlativeRow(title: "most improved",  isItalic: false, italicWord: "improved", who: "jamie · +4 ranks")
+                        SuperlativeRow(title: "most reliable",  isItalic: true,  who: mostReliable)
+                        SuperlativeRow(title: "the clutch",     isItalic: false, italicWord: "clutch", who: theCutch)
+                        SuperlativeRow(title: "full sender",    isItalic: true,  who: fullSender)
+                        SuperlativeRow(title: "runner up",      isItalic: false, italicWord: "up",     who: runnerUp)
                     }
                     .padding(.bottom, 22)
 
@@ -81,7 +163,7 @@ struct RecapView: View {
                         }
                     } label: {
                         HStack {
-                            Text("start season 04")
+                            Text("start season \(String(format: "%02d", seasonNumber + 1))")
                                 .font(.system(size: 16, weight: .semibold))
                             Spacer()
                             Text("→").font(.system(size: 18))

@@ -98,7 +98,7 @@ private struct VoteContent: View {
 
             (Text("at stake → ").bold().foregroundStyle(.white)
              + Text("−\(vote.pointsAtRisk) points.\n")
-             + Text(vote.move.creatorID == vote.petitioner.id ? "group leader penalty applies — they called this one." : "group leader penalty does not apply — they didn't call this one."))
+             + Text(vote.move.creatorID == vote.petitioner.id ? "move leader penalty applies — they called this one." : "move leader penalty does not apply — they didn't call this one."))
                 .font(.system(size: 12))
                 .foregroundStyle(Color.white.opacity(0.6))
                 .lineSpacing(3)
@@ -128,7 +128,8 @@ private struct VoteContent: View {
             }
             .padding(.bottom, 18)
 
-            if vote.outcome == .pending && vote.totalVotes > 0 {
+            if vote.outcome == .pending && vote.totalVotes > 0
+                && state.activeMove.creatorID == state.currentUserID {
                 Button {
                     state.resolveActiveExcusedVote()
                 } label: {

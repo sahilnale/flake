@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flake. — show up. get ranked. or get roasted.</title>
+  <meta name="description" content="the group chat accountability app nobody asked for. RSVP to moves, track who shows up, and let the leaderboard do the talking." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400;1,9..144,700&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #09090e; --bg-raise: #0f0f18;
+      --surface: rgba(255,255,255,0.045); --border: rgba(255,255,255,0.08); --border-hi: rgba(255,255,255,0.15);
+      --text: #f0f0f4; --muted: rgba(255,255,255,0.50); --dim: rgba(255,255,255,0.28);
+      --g1: #ff6b9d; --g2: #ff8c42; --g3: #ffd166; --bad: #ff5a7a;
+      --grad: linear-gradient(135deg,var(--g1),var(--g2));
+      --grad-text: linear-gradient(90deg,var(--g1) 0%,var(--g2) 55%,var(--g3) 100%);
+      --radius-sm:12px; --radius-md:18px; --radius-lg:24px;
+      --mono:'JetBrains Mono',monospace; --display:'Fraunces',Georgia,serif; --sans:'Space Grotesk',system-ui,sans-serif;
+      --ease-out:cubic-bezier(0.16,1,0.3,1); --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.6;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+    a{color:inherit;text-decoration:none}
+
+    /* ── Utility ── */
+    .container{width:100%;max-width:1120px;margin:0 auto;padding:0 24px}
+    .mono{font-family:var(--mono)}
+    .gradient-text{background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)}
+
+    /* ── Animated gradient background ── */
+    @keyframes grad-shift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .anim-gradient-text {
+      background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3), var(--g1));
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: grad-shift 4s ease infinite;
+    }
+
+    /* ── Blobs ── */
+    .blobs{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+    .blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:0.09;will-change:transform}
+    .blob-1{width:700px;height:700px;background:var(--g1);top:-220px;left:-180px;animation:blob1 22s ease-in-out infinite alternate}
+    .blob-2{width:600px;height:600px;background:var(--g2);bottom:5%;right:-120px;animation:blob2 28s ease-in-out infinite alternate}
+    .blob-3{width:420px;height:420px;background:var(--g3);top:45%;left:38%;opacity:0.055;animation:blob3 20s ease-in-out infinite alternate}
+    @keyframes blob1{from{transform:translate(0,0) scale(1)}to{transform:translate(50px,40px) scale(1.12)}}
+    @keyframes blob2{from{transform:translate(0,0) scale(1)}to{transform:translate(-40px,30px) scale(1.08)}}
+    @keyframes blob3{from{transform:translate(0,0) scale(1)}to{transform:translate(30px,-40px) scale(1.15)}}
+    @media(prefers-reduced-motion:reduce){.blob{animation:none}}
+
+    /* ── Nav ── */
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--border);background:rgba(9,9,14,0.7);transform:translateY(-100%);animation:nav-drop 0.6s var(--ease-out) 0.1s forwards}
+    @keyframes nav-drop{to{transform:translateY(0)}}
+    .nav-inner{display:flex;align-items:center;justify-content:space-between;height:60px}
+    .nav-logo{font-family:var(--display);font-size:22px;font-weight:700;letter-spacing:-0.5px}
+    .nav-logo span{background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .nav-cta{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#fff;background:var(--grad);padding:9px 20px;border-radius:100px;cursor:pointer;transition:opacity 150ms,transform 150ms,box-shadow 150ms}
+    .nav-cta:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 8px 24px rgba(255,107,157,.3)}
+
+    /* ── Hero ── */
+    .hero{position:relative;z-index:1;padding:140px 0 100px;display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center}
+    .hero-left>*{opacity:0;transform:translateY(28px)}
+    .hero-left>.hero-eyebrow-wrap{animation:hero-in 0.7s var(--ease-out) 0.3s forwards}
+    .hero-left>.hero-h1{animation:hero-in 0.7s var(--ease-out) 0.45s forwards}
+    .hero-left>.hero-sub{animation:hero-in 0.7s var(--ease-out) 0.58s forwards}
+    .hero-left>.hero-actions{animation:hero-in 0.7s var(--ease-out) 0.70s forwards}
+    @keyframes hero-in{to{opacity:1;transform:translateY(0)}}
+
+    .hero-eyebrow-wrap{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:6px 14px 6px 10px;margin-bottom:28px}
+    .dot{width:6px;height:6px;border-radius:50%;background:var(--g1);box-shadow:0 0 8px var(--g1);animation:pulse 2s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 8px var(--g1)}50%{opacity:.4;box-shadow:0 0 2px var(--g1)}}
+    .hero-h1{font-family:var(--display);font-size:clamp(48px,7vw,80px);font-weight:700;line-height:1.0;letter-spacing:-2px;margin-bottom:20px}
+    .hero-h1 em{font-style:italic}
+    .hero-sub{font-size:17px;color:var(--muted);line-height:1.65;max-width:440px;margin-bottom:40px}
+    .hero-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+
+    .btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--grad);color:#fff;font-size:15px;font-weight:600;padding:14px 28px;border-radius:var(--radius-md);cursor:pointer;transition:transform 200ms var(--ease-out),box-shadow 200ms;box-shadow:0 0 32px rgba(255,107,157,.2)}
+    .btn-primary:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(255,107,157,.4)}
+    .btn-secondary{font-size:14px;font-weight:500;color:var(--muted);padding:14px 20px;cursor:pointer;transition:color 150ms}
+    .btn-secondary:hover{color:var(--text)}
+
+    /* ── Phone mockup ── */
+    .phone-wrap{display:flex;justify-content:center;align-items:center;position:relative;opacity:0;transform:translateY(32px) scale(0.96);animation:hero-in 0.8s var(--ease-out) 0.5s forwards}
+    .phone-wrap::before{content:'';position:absolute;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(255,107,157,.18),transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);pointer-events:none;animation:glow-pulse 3s ease-in-out infinite alternate}
+    @keyframes glow-pulse{from{opacity:.6;transform:translate(-50%,-50%) scale(1)}to{opacity:1;transform:translate(-50%,-50%) scale(1.1)}}
+    .phone{width:260px;background:#0d0d14;border-radius:44px;border:1.5px solid rgba(255,255,255,.12);overflow:hidden;box-shadow:0 0 0 8px rgba(255,255,255,.03),0 40px 80px rgba(0,0,0,.6),0 0 60px rgba(255,107,157,.1);position:relative;z-index:2;animation:phone-float 4s ease-in-out infinite;transform-origin:center}
+    @keyframes phone-float{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-14px) rotate(-1deg)}}
+    @media(prefers-reduced-motion:reduce){.phone{animation:none}.blob{animation:none}}
+    .phone-notch{height:30px;display:flex;justify-content:center;align-items:flex-start;padding-top:10px}
+    .phone-notch-pill{width:80px;height:10px;background:#0a0a0f;border-radius:100px}
+    .phone-screen{padding:0 14px 20px}
+    .phone-eyebrow{font-family:var(--mono);font-size:8px;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.3);margin-bottom:4px}
+    .phone-title{font-family:var(--display);font-size:26px;font-weight:700;line-height:1;margin-bottom:12px}
+    .phone-title em{font-style:italic;background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .phone-tabs{display:flex;gap:4px;background:rgba(255,255,255,.04);border-radius:10px;padding:3px;margin-bottom:12px}
+    .phone-tab{flex:1;text-align:center;font-family:var(--mono);font-size:8px;padding:5px 0;border-radius:8px;color:rgba(255,255,255,.4)}
+    .phone-tab.active{background:rgba(255,255,255,.10);color:#fff}
+    .phone-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;margin-bottom:3px;opacity:0;animation:row-in 0.4s var(--ease-out) forwards}
+    .phone-row:nth-child(1){animation-delay:0.9s}.phone-row:nth-child(2){animation-delay:1.05s}.phone-row:nth-child(3){animation-delay:1.20s}.phone-row:nth-child(4){animation-delay:1.35s}.phone-row:nth-child(6){animation-delay:1.50s}
+    @keyframes row-in{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
+    .phone-row.you{background:linear-gradient(90deg,rgba(255,107,157,.12),transparent)}
+    .phone-rank{font-family:var(--display);font-size:14px;width:20px;flex-shrink:0;color:rgba(255,255,255,.35)}
+    .phone-rank.gold{background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700}
+    .phone-rank.bad{color:var(--bad)}
+    .phone-avatar{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8px;font-weight:500;flex-shrink:0}
+    .phone-name{flex:1;font-size:12px;font-weight:500}
+    .phone-shows{font-family:var(--mono);font-size:8px;color:rgba(255,255,255,.35)}
+    .phone-score{font-family:var(--display);font-size:16px;font-weight:600}
+    .phone-score.gold{background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .phone-score.bad{color:var(--bad)}
+    .phone-divider{height:1px;background:rgba(255,255,255,.06);margin:6px 0}
+
+    /* ── Marquee ticker ── */
+    .ticker{position:relative;z-index:1;overflow:hidden;padding:18px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(255,255,255,.015);margin-bottom:0}
+    .ticker-track{display:flex;gap:0;white-space:nowrap;animation:ticker 28s linear infinite}
+    @keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+    .ticker-track:hover{animation-play-state:paused}
+    .ticker-item{display:inline-flex;align-items:center;gap:10px;padding:0 32px;font-family:var(--mono);font-size:11px;letter-spacing:0.6px;color:var(--muted)}
+    .ticker-dot{width:4px;height:4px;border-radius:50%;background:var(--g1);flex-shrink:0}
+
+    /* ── How it works ── */
+    .how{position:relative;z-index:1;padding:100px 0}
+    .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
+    .how-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px 28px;transition:border-color 300ms,transform 300ms var(--ease-out),box-shadow 300ms;position:relative;overflow:hidden}
+    .how-card::after{content:'';position:absolute;inset:0;border-radius:var(--radius-lg);background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,107,157,.08),transparent 60%);opacity:0;transition:opacity 300ms;pointer-events:none}
+    .how-card:hover{border-color:var(--border-hi);transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,.4)}
+    .how-card:hover::after{opacity:1}
+    .how-num{font-family:var(--mono);font-size:11px;letter-spacing:1.2px;color:var(--g1);margin-bottom:16px}
+    .how-title{font-family:var(--display);font-size:28px;font-weight:700;line-height:1.1;margin-bottom:12px}
+    .how-title em{font-style:italic}
+    .how-body{font-size:14px;color:var(--muted);line-height:1.65}
+
+    /* ── Stats ── */
+    .stats{position:relative;z-index:1;padding:0 0 100px}
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:24px 20px;transition:border-color 250ms,transform 250ms var(--ease-out)}
+    .stat-card:hover{border-color:var(--border-hi);transform:translateY(-2px)}
+    .stat-num{font-family:var(--display);font-size:36px;font-weight:700;line-height:1;margin-bottom:6px}
+    .stat-label{font-family:var(--mono);font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+
+    /* ── Roasts ── */
+    .roasts{position:relative;z-index:1;padding:0 0 100px}
+    .section-header{margin-bottom:48px}
+    .section-h2{font-family:var(--display);font-size:clamp(36px,5vw,56px);font-weight:700;line-height:1.05;letter-spacing:-1.5px;margin-top:8px}
+    .section-h2 em{font-style:italic}
+    .roasts-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .roast-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;transition:border-color 250ms,transform 250ms var(--ease-out),box-shadow 250ms;transform-style:preserve-3d;will-change:transform}
+    .roast-card:hover{border-color:var(--border-hi);box-shadow:0 16px 40px rgba(0,0,0,.4)}
+    .roast-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .roast-target{font-family:var(--mono);font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)}
+    .roast-time{font-family:var(--mono);font-size:10px;color:var(--dim)}
+    .roast-text{font-family:'Georgia',serif;font-size:17px;font-style:italic;line-height:1.6;color:var(--text);margin-bottom:16px}
+    .roast-text strong{font-style:normal;background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .roast-reactions{display:flex;gap:6px}
+    .reaction{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:100px;padding:4px 10px;font-family:var(--mono);font-size:10px;font-weight:500;color:var(--muted);cursor:pointer;transition:background 150ms,border-color 150ms,color 150ms,transform 120ms var(--ease-spring)}
+    .reaction:hover{transform:scale(1.1)}
+    .reaction:active{transform:scale(0.94)}
+    .reaction.hot{background:linear-gradient(90deg,rgba(255,107,157,.14),rgba(255,140,66,.08));border-color:rgba(255,107,157,.28);color:var(--g1)}
+
+    /* ── Features ── */
+    .features{position:relative;z-index:1;padding:0 0 100px}
+    .features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:48px}
+    .feature-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px;transition:border-color 250ms,transform 300ms var(--ease-out),box-shadow 300ms;position:relative;overflow:hidden}
+    .feature-card::before{content:'';position:absolute;inset:0;border-radius:var(--radius-lg);background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,107,157,.07),transparent 55%);opacity:0;transition:opacity 300ms;pointer-events:none}
+    .feature-card:hover{border-color:var(--border-hi);transform:translateY(-4px);box-shadow:0 24px 48px rgba(0,0,0,.4)}
+    .feature-card:hover::before{opacity:1}
+    .feature-card.accent{background:linear-gradient(135deg,rgba(255,107,157,.09),rgba(255,140,66,.04));border-color:rgba(255,107,157,.18)}
+    .feature-card.accent:hover{border-color:rgba(255,107,157,.32)}
+    .feature-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;border:1px solid var(--border);background:var(--surface);transition:transform 300ms var(--ease-spring),border-color 200ms}
+    .feature-card:hover .feature-icon{transform:scale(1.08) rotate(-3deg);border-color:rgba(255,107,157,.3)}
+    .feature-icon svg{width:20px;height:20px;stroke:var(--g1)}
+    .feature-title{font-family:var(--display);font-size:24px;font-weight:700;line-height:1.1;margin-bottom:10px;letter-spacing:-.5px}
+    .feature-title em{font-style:italic}
+    .feature-body{font-size:14px;color:var(--muted);line-height:1.65}
+    .mini-board{margin-top:20px}
+    .mini-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+    .mini-row:last-child{border-bottom:none}
+    .mini-rank{font-family:var(--mono);font-size:11px;width:18px;color:var(--dim);flex-shrink:0}
+    .mini-rank.g{background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;font-weight:700}
+    .mini-name{flex:1;font-weight:500}
+    .mini-badge{font-family:var(--mono);font-size:9px;padding:2px 8px;border-radius:100px;border:1px solid rgba(255,209,102,.3);color:var(--g3);background:rgba(255,209,102,.08)}
+    .mini-score{font-family:var(--display);font-size:16px;font-weight:600}
+    .mini-score.g{background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .season-preview{margin-top:20px}
+    .season-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .season-label{font-family:var(--mono);font-size:10px;color:var(--muted)}
+    .season-score{font-family:var(--mono);font-size:10px;color:var(--dim)}
+    .season-bar{height:6px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+    .season-fill{height:100%;border-radius:4px;background:var(--grad);width:0%;transition:width 1.4s var(--ease-out)}
+    .season-fill.animated{width:72%}
+
+    /* ── CTA ── */
+    .cta-section{position:relative;z-index:1;padding:0 0 140px}
+    .cta-card{border-radius:32px;padding:80px 60px;text-align:center;position:relative;overflow:hidden;background:linear-gradient(135deg,rgba(255,107,157,.10),rgba(255,140,66,.06),rgba(255,209,102,.04));border:1px solid transparent;background-clip:padding-box}
+    .cta-card::before{content:'';position:absolute;inset:-1px;border-radius:33px;background:linear-gradient(135deg,rgba(255,107,157,.35),rgba(255,140,66,.2),rgba(255,209,102,.15));z-index:-1;animation:border-spin 4s linear infinite}
+    .cta-card::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(255,107,157,.14),transparent 65%);pointer-events:none}
+    @keyframes border-spin{0%{background:linear-gradient(0deg,rgba(255,107,157,.35),rgba(255,140,66,.2),rgba(255,209,102,.15))}50%{background:linear-gradient(180deg,rgba(255,107,157,.35),rgba(255,140,66,.2),rgba(255,209,102,.15))}100%{background:linear-gradient(360deg,rgba(255,107,157,.35),rgba(255,140,66,.2),rgba(255,209,102,.15))}}
+    .cta-eyebrow{margin-bottom:20px;display:flex;justify-content:center}
+    .cta-h2{font-family:var(--display);font-size:clamp(40px,6vw,68px);font-weight:700;line-height:1.0;letter-spacing:-2px;margin-bottom:16px;position:relative;z-index:1}
+    .cta-h2 em{font-style:italic}
+    .cta-sub{font-size:16px;color:var(--muted);max-width:420px;margin:0 auto 40px;line-height:1.65;position:relative;z-index:1}
+    .cta-buttons{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;position:relative;z-index:1}
+    .app-store-btn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#09090e;font-size:14px;font-weight:600;padding:14px 24px;border-radius:var(--radius-md);cursor:pointer;transition:transform 200ms var(--ease-out),box-shadow 200ms}
+    .app-store-btn:hover{transform:translateY(-3px);box-shadow:0 12px 32px rgba(255,255,255,.15)}
+    .app-store-btn svg{width:20px;height:20px;fill:#09090e}
+
+    /* ── Footer ── */
+    footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:32px 0}
+    .footer-inner{display:flex;align-items:center;justify-content:space-between}
+    .footer-logo{font-family:var(--display);font-size:18px;font-weight:700;background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .footer-copy{font-family:var(--mono);font-size:11px;color:var(--dim)}
+
+    /* ── Fade-up ── */
+    .fade-up{opacity:0;transform:translateY(28px);transition:opacity 650ms var(--ease-out),transform 650ms var(--ease-out)}
+    .fade-up.visible{opacity:1;transform:translateY(0)}
+
+    /* ── Responsive ── */
+    @media(max-width:1024px){
+      .hero{grid-template-columns:1fr;gap:60px;padding:120px 0 80px}
+      .phone-wrap{order:-1}
+      .hero-h1{font-size:52px}
+      .how-grid{grid-template-columns:1fr}
+      .stats-grid{grid-template-columns:repeat(2,1fr)}
+      .roasts-grid{grid-template-columns:1fr}
+      .features-grid{grid-template-columns:1fr}
+    }
+    @media(max-width:640px){
+      .hero{padding:100px 0 60px}
+      .hero-h1{font-size:40px;letter-spacing:-1px}
+      .hero-sub{font-size:15px}
+      .cta-card{padding:48px 24px}
+      .cta-h2{font-size:36px;letter-spacing:-1px}
+      .stats-grid{grid-template-columns:1fr 1fr}
+      .footer-inner{flex-direction:column;gap:12px;text-align:center}
+      .phone{width:220px}
+    }
+  </style>
+</head>
+<body>
+
+  <div class="blobs" aria-hidden="true">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+
+  <!-- Nav -->
+  <nav role="navigation" aria-label="Main navigation">
+    <div class="container nav-inner">
+      <div class="nav-logo"><span>flake.</span></div>
+      <a href="#download" class="nav-cta">
+        get the app
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7h10M8 3l4 4-4 4"/></svg>
+      </a>
+    </div>
+  </nav>
+
+  <main>
+
+    <!-- Hero -->
+    <section class="hero container" aria-labelledby="hero-h1">
+      <div class="hero-left">
+        <div class="hero-eyebrow-wrap" role="note">
+          <span class="dot" aria-hidden="true"></span>
+          <span class="eyebrow">season 03 · week 7 of 12</span>
+        </div>
+        <h1 class="hero-h1" id="hero-h1">
+          show up.<br>
+          get ranked.<br>
+          <em class="anim-gradient-text">or get roasted.</em>
+        </h1>
+        <p class="hero-sub">
+          the group chat accountability app nobody asked for.
+          lock in to the move, watch who flakes, and let the leaderboard do the rest.
+        </p>
+        <div class="hero-actions">
+          <a href="#download" class="btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2v13M5 12l7 7 7-7"/><path d="M3 21h18"/></svg>
+            download for iOS
+          </a>
+          <a href="#how" class="btn-secondary">see how it works →</a>
+        </div>
+      </div>
+
+      <div class="phone-wrap" aria-hidden="true">
+        <div class="phone">
+          <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+          <div class="phone-screen">
+            <div class="phone-eyebrow">szn 03 · wk 7 of 12</div>
+            <div class="phone-title">the <em>ranks.</em></div>
+            <div class="phone-tabs">
+              <div class="phone-tab active">season</div>
+              <div class="phone-tab">all time</div>
+              <div class="phone-tab">flake rate</div>
+            </div>
+            <div class="phone-row">
+              <div class="phone-rank gold">01</div>
+              <div class="phone-avatar" style="background:linear-gradient(135deg,#ff6b9d,#ff8c42)">LM</div>
+              <div class="phone-name">luca</div>
+              <div class="phone-shows">11 show</div>
+              <div class="phone-score gold">284</div>
+            </div>
+            <div class="phone-row">
+              <div class="phone-rank" style="color:rgba(255,255,255,.35)">02</div>
+              <div class="phone-avatar" style="background:rgba(255,255,255,.08)">NK</div>
+              <div class="phone-name">nina</div>
+              <div class="phone-shows">11 show</div>
+              <div class="phone-score">271</div>
+            </div>
+            <div class="phone-row">
+              <div class="phone-rank" style="color:rgba(255,255,255,.35)">03</div>
+              <div class="phone-avatar" style="background:rgba(255,255,255,.08)">AT</div>
+              <div class="phone-name">ade</div>
+              <div class="phone-shows">10 show</div>
+              <div class="phone-score">218</div>
+            </div>
+            <div class="phone-row you">
+              <div class="phone-rank" style="color:rgba(255,255,255,.35)">04</div>
+              <div class="phone-avatar" style="background:rgba(255,107,157,.2);border:1px solid rgba(255,107,157,.4)">M</div>
+              <div class="phone-name" style="color:#ff6b9d">you</div>
+              <div class="phone-shows">9 show</div>
+              <div class="phone-score" style="background:var(--grad-text);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">196</div>
+            </div>
+            <div class="phone-divider"></div>
+            <div class="phone-row">
+              <div class="phone-rank bad">08</div>
+              <div class="phone-avatar" style="background:rgba(255,90,122,.12)">MK</div>
+              <div class="phone-name" style="color:var(--bad)">mo</div>
+              <div class="phone-shows">2 show</div>
+              <div class="phone-score bad">−14</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Marquee ticker -->
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-track">
+        <!-- duplicated for seamless loop -->
+        <span class="ticker-item"><span class="ticker-dot"></span>mo flaked again · 3h ago</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>luca locked in · 11/12 moves</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>iggy said maybe · again</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>the receipts are live</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>season 03 · week 7 of 12</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>nina earned: most reliable</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>jamie +4 pts this week</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>sam flake rate: 38%</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>mo flaked again · 3h ago</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>luca locked in · 11/12 moves</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>iggy said maybe · again</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>the receipts are live</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>season 03 · week 7 of 12</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>nina earned: most reliable</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>jamie +4 pts this week</span>
+        <span class="ticker-item"><span class="ticker-dot"></span>sam flake rate: 38%</span>
+      </div>
+    </div>
+
+    <!-- How it works -->
+    <section class="how container" id="how" aria-labelledby="how-h2">
+      <div class="eyebrow">how it works</div>
+      <div class="how-grid" role="list">
+        <article class="how-card fade-up" role="listitem">
+          <div class="how-num">01 · call a move</div>
+          <h2 class="how-title">set <em>the</em> plan.</h2>
+          <p class="how-body">create a move — time, place, vibe. everyone gets it. no back-and-forth in the chat, no "wait where are we going."</p>
+        </article>
+        <article class="how-card fade-up" role="listitem" style="transition-delay:90ms">
+          <div class="how-num">02 · lock in. or don't.</div>
+          <h2 class="how-title"><em>locked in,</em> maybe, or flaked.</h2>
+          <p class="how-body">three choices. one earns points. one loses them. one earns you a roast. you already know which is which.</p>
+        </article>
+        <article class="how-card fade-up" role="listitem" style="transition-delay:180ms">
+          <div class="how-num">03 · the receipts come out.</div>
+          <h2 class="how-title">the <em>board</em> doesn't lie.</h2>
+          <p class="how-body">every show and every bail is tracked, scored, and ranked. at the end of the season, someone gets the crown. someone gets cooked.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- Stats -->
+    <section class="stats container" aria-label="App statistics">
+      <div class="stats-grid">
+        <div class="stat-card fade-up">
+          <div class="stat-num gradient-text" data-count="14000" data-suffix="k" data-display="14k">14k</div>
+          <div class="stat-label">flakes tracked</div>
+        </div>
+        <div class="stat-card fade-up" style="transition-delay:70ms">
+          <div class="stat-num gradient-text" data-count="3200" data-suffix="k" data-display="3.2k">3.2k</div>
+          <div class="stat-label">moves called</div>
+        </div>
+        <div class="stat-card fade-up" style="transition-delay:140ms">
+          <div class="stat-num" style="color:var(--bad)" data-count="38" data-suffix="%" data-display="38%">38%</div>
+          <div class="stat-label">avg flake rate</div>
+        </div>
+        <div class="stat-card fade-up" style="transition-delay:210ms">
+          <div class="stat-num gradient-text" data-count="892" data-suffix="" data-display="892">892</div>
+          <div class="stat-label">roasts delivered</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Roasts -->
+    <section class="roasts container" aria-labelledby="roasts-h2">
+      <div class="section-header">
+        <div class="eyebrow">the receipts</div>
+        <h2 class="section-h2" id="roasts-h2">it will <em>remember.</em></h2>
+      </div>
+      <div class="roasts-grid">
+        <article class="roast-card fade-up">
+          <div class="roast-meta">
+            <span class="roast-target">re: mo</span>
+            <span class="roast-time">3d ago</span>
+          </div>
+          <p class="roast-text">mo has flaked 6 times. flaking is no longer an event for mo — it's a <strong>lifestyle brand.</strong></p>
+          <div class="roast-reactions">
+            <button class="reaction hot" aria-label="Fire, 7 reactions" aria-pressed="false">🔥 7</button>
+            <button class="reaction" aria-label="Skull, 4 reactions" aria-pressed="false">💀 4</button>
+          </div>
+        </article>
+        <article class="roast-card fade-up" style="transition-delay:90ms">
+          <div class="roast-meta">
+            <span class="roast-target">re: iggy</span>
+            <span class="roast-time">1w ago</span>
+          </div>
+          <p class="roast-text">iggy has said yes 14 times and bailed 6. <strong>submit a verb that means something.</strong></p>
+          <div class="roast-reactions">
+            <button class="reaction hot" aria-label="Fire, 9 reactions" aria-pressed="false">🔥 9</button>
+            <button class="reaction" aria-label="Skull, 3 reactions" aria-pressed="false">💀 3</button>
+          </div>
+        </article>
+        <article class="roast-card fade-up" style="transition-delay:180ms">
+          <div class="roast-meta">
+            <span class="roast-target">re: luca</span>
+            <span class="roast-time">2d ago</span>
+          </div>
+          <p class="roast-text">luca hasn't been home on a move night since the obama administration. their plants are dust. they <strong>are</strong> the function.</p>
+          <div class="roast-reactions">
+            <button class="reaction hot" aria-label="Fire, 12 reactions" aria-pressed="false">🔥 12</button>
+            <button class="reaction" aria-label="Skull, 5 reactions" aria-pressed="false">💀 5</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features container" aria-labelledby="features-h2">
+      <div class="section-header">
+        <div class="eyebrow">what you get</div>
+        <h2 class="section-h2" id="features-h2">built for people who <em>actually</em> show up.</h2>
+      </div>
+      <div class="features-grid">
+        <article class="feature-card accent fade-up">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7l9-4 9 4M3 7v10l9 4m0-14L3 7m9 14V10m9-3v10l-9 4"/></svg>
+          </div>
+          <h3 class="feature-title">season <em>rankings</em></h3>
+          <p class="feature-body">every show-up and every flake feeds a live leaderboard. scores, ranks, and a crown at the end of the season.</p>
+          <div class="mini-board" aria-label="Sample leaderboard">
+            <div class="mini-row"><span class="mini-rank g">01</span><span class="mini-name">luca</span><span class="mini-badge">zero flakes</span><span class="mini-score g">284</span></div>
+            <div class="mini-row"><span class="mini-rank">02</span><span class="mini-name">nina</span><span class="mini-badge" style="border-color:rgba(255,107,157,.3);color:var(--g1);background:rgba(255,107,157,.08)">most reliable</span><span class="mini-score">271</span></div>
+            <div class="mini-row"><span class="mini-rank">03</span><span class="mini-name">ade</span><span class="mini-score">218</span></div>
+          </div>
+        </article>
+        <article class="feature-card fade-up" style="transition-delay:90ms">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </div>
+          <h3 class="feature-title">the roast <em>machine</em></h3>
+          <p class="feature-body">every member gets a generated roast based on their real stats. your attendance history is content. the receipts live forever.</p>
+        </article>
+        <article class="feature-card fade-up" style="transition-delay:140ms">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <h3 class="feature-title">badges &amp; <em>cabinet</em></h3>
+          <p class="feature-body">earn badges from real stats. zero flakes, season leader, calling shots. gold ones mean something. the regular ones are mostly embarrassing.</p>
+        </article>
+        <article class="feature-card fade-up" style="transition-delay:200ms">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3 class="feature-title"><em>season</em> system</h3>
+          <p class="feature-body">group leaders configure length and start date. at the end: a recap. champion gets the crown, biggest flake gets a dedicated roast.</p>
+          <div class="season-preview" aria-label="Season progress example">
+            <div class="season-row">
+              <span class="season-label">season 03 · to the crown</span>
+              <span class="season-score">196 / 284</span>
+            </div>
+            <div class="season-bar"><div class="season-fill js-season-fill"></div></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section container" id="download" aria-labelledby="cta-h2">
+      <div class="cta-card fade-up">
+        <div class="cta-eyebrow"><span class="eyebrow">you've been warned</span></div>
+        <h2 class="cta-h2" id="cta-h2">your group chat<br>needs <em>accountability.</em></h2>
+        <p class="cta-sub">create a group, call a move, and let the leaderboard handle the rest. the crown doesn't hand itself out.</p>
+        <div class="cta-buttons">
+          <a href="#" class="app-store-btn" aria-label="Download on the App Store">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            download on the app store
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer role="contentinfo">
+    <div class="container footer-inner">
+      <div class="footer-logo">flake.</div>
+      <div class="footer-copy">© 2026 flake. show up.</div>
+    </div>
+  </footer>
+
+  <script>
+    // ── Scroll fade-up ──────────────────────────────────────────────
+    const fadeObs = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); }),
+      { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
+    );
+    document.querySelectorAll('.fade-up').forEach(el => fadeObs.observe(el));
+
+    // ── Count-up stats ──────────────────────────────────────────────
+    const countObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        const el = e.target;
+        const display = el.dataset.display;
+        const suffix = el.dataset.suffix;
+        const target = parseFloat(el.dataset.count);
+        const isDecimal = display.includes('.');
+        let start = null;
+        const duration = 1400;
+        const step = ts => {
+          if (!start) start = ts;
+          const p = Math.min((ts - start) / duration, 1);
+          const ease = 1 - Math.pow(1 - p, 3);
+          const val = target * ease;
+          if (isDecimal) {
+            el.textContent = (val / 1000).toFixed(1) + 'k';
+          } else if (suffix === 'k') {
+            el.textContent = Math.floor(val / 1000) + 'k';
+          } else if (suffix === '%') {
+            el.textContent = Math.floor(val) + '%';
+          } else {
+            el.textContent = Math.floor(val).toLocaleString();
+          }
+          if (p < 1) requestAnimationFrame(step);
+          else el.textContent = display;
+        };
+        requestAnimationFrame(step);
+        countObs.unobserve(el);
+      });
+    }, { threshold: 0.5 });
+    document.querySelectorAll('[data-count]').forEach(el => countObs.observe(el));
+
+    // ── Season bar animate-in ────────────────────────────────────────
+    const barObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('animated'); barObs.unobserve(e.target); }
+      });
+    }, { threshold: 0.4 });
+    document.querySelectorAll('.js-season-fill').forEach(el => barObs.observe(el));
+
+    // ── Mouse-follow glow on cards ──────────────────────────────────
+    document.querySelectorAll('.how-card, .feature-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        const x = ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%';
+        const y = ((e.clientY - r.top)  / r.height * 100).toFixed(1) + '%';
+        card.style.setProperty('--mx', x);
+        card.style.setProperty('--my', y);
+      });
+    });
+
+    // ── 3D tilt on roast cards ──────────────────────────────────────
+    document.querySelectorAll('.roast-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const r = card.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width  - 0.5;
+        const y = (e.clientY - r.top)  / r.height - 0.5;
+        card.style.transform = `perspective(600px) rotateX(${(-y * 6).toFixed(2)}deg) rotateY(${(x * 6).toFixed(2)}deg) translateY(-2px)`;
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.transition = 'transform 400ms cubic-bezier(0.16,1,0.3,1), border-color 250ms, box-shadow 250ms';
+        card.style.transform = '';
+        setTimeout(() => card.style.transition = '', 420);
+      });
+    });
+
+    // ── Mouse parallax on blobs ─────────────────────────────────────
+    let mx = 0, my = 0, bx = 0, by = 0;
+    document.addEventListener('mousemove', e => {
+      mx = (e.clientX / window.innerWidth  - 0.5) * 40;
+      my = (e.clientY / window.innerHeight - 0.5) * 40;
+    });
+    const b1 = document.querySelector('.blob-1');
+    const b2 = document.querySelector('.blob-2');
+    const b3 = document.querySelector('.blob-3');
+    (function raf() {
+      bx += (mx - bx) * 0.04;
+      by += (my - by) * 0.04;
+      if (b1) b1.style.transform = `translate(${bx * 0.6}px,${by * 0.6}px)`;
+      if (b2) b2.style.transform = `translate(${-bx * 0.4}px,${-by * 0.4}px)`;
+      if (b3) b3.style.transform = `translate(${bx * 0.8}px,${by * 0.8}px)`;
+      requestAnimationFrame(raf);
+    })();
+
+    // ── Reaction toggle with spring bump ───────────────────────────
+    document.querySelectorAll('.reaction').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const parts = btn.textContent.trim().split(' ');
+        const emoji = parts[0];
+        const count = parseInt(parts[1]);
+        const active = btn.classList.toggle('hot');
+        btn.setAttribute('aria-pressed', active);
+        btn.textContent = `${emoji} ${active ? count + 1 : count - 1}`;
+        // spring scale
+        btn.animate([{transform:'scale(1)'},{transform:'scale(1.28)'},{transform:'scale(0.95)'},{transform:'scale(1)'}],
+          {duration:340, easing:'cubic-bezier(0.34,1.56,0.64,1)'});
+      });
+    });
+  </script>
+</body>
+</html>

@@ -7,7 +7,7 @@ struct RSVPView: View {
 
     @State private var selected: RSVPStatus? = .lockedIn
 
-    private var isGroupLeader: Bool { state.activeMove.creatorID == state.currentUserID }
+    private var isMoveLeader: Bool { state.activeMove.creatorID == state.currentUserID }
     private var flakePenalty: Int {
         state.activeMove.flakePenalty(for: state.currentUserID)
     }
@@ -40,7 +40,7 @@ struct RSVPView: View {
                         Text("flaking now costs ")
                             .foregroundStyle(Color.white.opacity(0.75))
                         + Text("−\(flakePenalty) pts").bold().foregroundStyle(.white)
-                        + Text(isGroupLeader ? " as group leader" : "")
+                        + Text(isMoveLeader ? " as group leader" : "")
                             .foregroundStyle(Color.white.opacity(0.75))
                         + Text(".").foregroundStyle(Color.white.opacity(0.75))
                     }
@@ -71,7 +71,7 @@ struct RSVPView: View {
 
                         RSVPCard(status: .flaked,
                                  label: "flake",
-                                 desc: isGroupLeader ? "you started this. flaking hits harder." : "can't make it. be honest before the group waits on you.",
+                                 desc: isMoveLeader ? "you started this. flaking hits harder." : "can't make it. be honest before the group waits on you.",
                                  pts: "−\(flakePenalty) pts",
                                  ptsGood: false,
                                  selected: selected == .flaked)
