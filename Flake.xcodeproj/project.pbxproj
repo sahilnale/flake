@@ -18,6 +18,7 @@
 		13521EBB65A761198C71AE90 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = F00EC31DA7DD72B6637A645B /* Supabase */; };
 		21D3107111AA017AC1BAACB7 /* AppGroupConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FE8AD81CD12760BAC94231D /* AppGroupConfig.swift */; };
 		21E6555F49981CB1EE84C1D7 /* VoteView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5E18B8D3A96162FA19B293 /* VoteView.swift */; };
+		AA1234567890ABCDEF012345 /* AttestationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0987654321FEDCBA098765 /* AttestationSheet.swift */; };
 		24F48354934270C297C7AFBA /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF6023B1A9D4192298CFBC4 /* HomeView.swift */; };
 		25C425D6685779B74EF3FB38 /* AuthGateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E256171EF2DE0BDB76A3F48F /* AuthGateView.swift */; };
 		292BB29B010E1AE8715B3343 /* AvatarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 869A68A502B77455426F3913 /* AvatarView.swift */; };
@@ -111,6 +112,7 @@
 		E900CC6304F46A1D52789DC2 /* RSVPView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RSVPView.swift; sourceTree = "<group>"; };
 		E93D0C173485F0C11DD2EA43 /* FlakeMessages.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FlakeMessages.entitlements; sourceTree = "<group>"; };
 		ED5E18B8D3A96162FA19B293 /* VoteView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoteView.swift; sourceTree = "<group>"; };
+		AA0987654321FEDCBA098765 /* AttestationSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AttestationSheet.swift; sourceTree = "<group>"; };
 		F3BB32C1C353859CBB16B244 /* FlakeBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlakeBackend.swift; sourceTree = "<group>"; };
 		F547D7CAE15C741521B231CE /* SessionRestoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionRestoreView.swift; sourceTree = "<group>"; };
 		F5FE1A27875B95D658A34928 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -188,6 +190,7 @@
 				49177A8962487B98FFC49A68 /* RoastsView.swift */,
 				E900CC6304F46A1D52789DC2 /* RSVPView.swift */,
 				ED5E18B8D3A96162FA19B293 /* VoteView.swift */,
+				AA0987654321FEDCBA098765 /* AttestationSheet.swift */,
 				7B8D7EE2658F3FAE45D7884A /* Auth */,
 			);
 			path = Views;
@@ -399,6 +402,7 @@
 				E0232BA7856F05145794281D /* SupabaseConfig.swift in Sources */,
 				3BF1CC8B5558B9AC2D4CC947 /* Theme.swift in Sources */,
 				21E6555F49981CB1EE84C1D7 /* VoteView.swift in Sources */,
+				AA1234567890ABCDEF012345 /* AttestationSheet.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -169,6 +169,7 @@ final class AppState {
     var calendarSheetVisible = false
     var excusedRequestSheetVisible = false
     var attendanceSheetVisible = false
+    var attestationSheetMoveID: UUID? = nil   // nil = closed; non-nil = open for that move
     var featureScreen: FeatureScreen?
 
     var shouldShowAuthGate: Bool {
@@ -251,6 +252,83 @@ final class AppState {
             champion: members.first,
             biggestFlake: biggestFlake
         )
+    }
+
+    // MARK: - Attendance Votes ("who showed up?")
+    // [moveID: [voterID: [subjectID: AttendanceStatus]]]
+    var rawAttestationVotes: [UUID: [UUID: [UUID: AttendanceStatus]]] = [:]
+
+    /// Returns majority-vote attendance for a move, or nil for members with no votes.
+    /// Does NOT replace manual attendance — call site decides which to prefer.
+    func derivedAttendance(for moveID: UUID) -> [UUID: AttendanceStatus] {
+        guard let voterMap = rawAttestationVotes[moveID] else { return [:] }
+        // Collect all subjects mentioned across all voters
+        var showVotes: [UUID: Int] = [:]
+        var totalVotes: [UUID: Int] = [:]
+        for (_, subjectMap) in voterMap {
+            for (subjectID, status) in subjectMap {
+                totalVotes[subjectID, default: 0] += 1
+                if status == .showed { showVotes[subjectID, default: 0] += 1 }
+            }
+        }
+        var result: [UUID: AttendanceStatus] = [:]
+        for (subjectID, total) in totalVotes {
+            let showed = showVotes[subjectID] ?? 0
+            // ≥50% majority → showed; strictly less → missed
+            result[subjectID] = (showed * 2 >= total) ? .showed : .missed
+        }
+        return result
+    }
+
+    /// True if the current user has submitted attestation votes for this move.
+    func hasAttested(moveID: UUID) -> Bool {
+        rawAttestationVotes[moveID]?[currentUserID] != nil
+    }
+
+    /// How many distinct voters have submitted attestation for this move.
+    func attestationVoterCount(moveID: UUID) -> Int {
+        rawAttestationVotes[moveID]?.keys.count ?? 0
+    }
+
+    /// Submit the current user's "who showed up?" votes for a move.
+    /// Updates local state immediately; persists in background.
+    func submitAttestation(moveID: UUID, votes: [UUID: AttendanceStatus]) {
+        guard !votes.isEmpty else { return }
+        let uid = currentUserID
+
+        // Update local attestation state
+        if rawAttestationVotes[moveID] == nil { rawAttestationVotes[moveID] = [:] }
+        rawAttestationVotes[moveID]![uid] = votes
+
+        // Re-derive attendance and write into the move so scoring stays live
+        applyDerivedAttendance(moveID: moveID)
+
+        // Persist to backend
+        guard authStatus == .signedIn else { return }
+        Task {
+            do {
+                try await FlakeBackend.shared.submitAttendanceVotes(
+                    moveID: moveID, voterID: uid, votes: votes
+                )
+            } catch {
+                print("❌ [Flake] submitAttestation failed:", error.localizedDescription)
+            }
+        }
+    }
+
+    /// Writes vote-derived attendance into the move object so existing scoring code picks it up.
+    /// Manual settlement (non-empty attendance) takes priority and is never overwritten.
+    private func applyDerivedAttendance(moveID: UUID) {
+        guard let gi = groups.firstIndex(where: { $0.moves.contains { $0.id == moveID } }),
+              let mi = groups[gi].moves.firstIndex(where: { $0.id == moveID }) else { return }
+
+        let move = groups[gi].moves[mi]
+        // If already manually settled, don't touch it
+        guard move.attendance.isEmpty else { return }
+
+        let derived = derivedAttendance(for: moveID)
+        guard !derived.isEmpty else { return }
+        groups[gi].moves[mi].attendance = derived
     }
 
     // MARK: - Roast Reactions
@@ -616,6 +694,84 @@ final class AppState {
         }
     }
 
+    // MARK: - Delete move
+
+    func deleteMove(_ move: Move) {
+        guard authStatus == .signedIn else { return }
+        // Optimistic removal
+        guard let gi = groups.firstIndex(where: { $0.id == move.groupID }) else { return }
+        let previousMoves = groups[gi].moves
+        groups[gi].moves.removeAll { $0.id == move.id }
+        if selectedMoveIDByGroup[move.groupID] == move.id {
+            selectedMoveIDByGroup[move.groupID] = groups[gi].moves.first?.id
+        }
+
+        let moveID = move.id
+        let groupID = move.groupID
+        Task {
+            do {
+                try await FlakeBackend.shared.deleteMove(moveID: moveID)
+            } catch {
+                print("❌ [Flake] deleteMove failed:", error.localizedDescription)
+                // Roll back
+                await MainActor.run {
+                    if let gi2 = self.groups.firstIndex(where: { $0.id == groupID }) {
+                        self.groups[gi2].moves = previousMoves
+                    }
+                    self.authErrorMessage = "couldn't delete move: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+
+    // MARK: - Leave / delete group
+
+    func leaveGroup(_ group: FlakeGroup) {
+        guard authStatus == .signedIn else { return }
+        let snapshot = groups
+        groups.removeAll { $0.id == group.id }
+        if selectedGroupID == group.id { selectedGroupID = groups.first?.id ?? UUID() }
+        SharedGroupStore.save(groups)
+
+        let gid = group.id
+        Task {
+            do {
+                try await FlakeBackend.shared.leaveGroup(groupID: gid)
+            } catch {
+                print("❌ [Flake] leaveGroup failed:", error.localizedDescription)
+                await MainActor.run {
+                    self.groups = snapshot
+                    self.authErrorMessage = "couldn't leave group: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+
+    func deleteGroup(_ group: FlakeGroup) {
+        guard authStatus == .signedIn else { return }
+        let snapshot = groups
+        groups.removeAll { $0.id == group.id }
+        if selectedGroupID == group.id { selectedGroupID = groups.first?.id ?? UUID() }
+        SharedGroupStore.save(groups)
+
+        let gid = group.id
+        Task {
+            do {
+                try await FlakeBackend.shared.deleteGroup(groupID: gid)
+            } catch {
+                print("❌ [Flake] deleteGroup failed:", error.localizedDescription)
+                // Roll back so the user knows it didn't work
+                await MainActor.run {
+                    self.groups = snapshot
+                    if self.groups.contains(where: { $0.id == gid }) {
+                        self.selectedGroupID = gid
+                    }
+                    self.authErrorMessage = "couldn't delete group: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+
     func settleActiveMove(attendance: [UUID: AttendanceStatus]) {
         guard let selectedGroupIndex,
               let activeMoveIndex else { return }
@@ -946,6 +1102,44 @@ final class AppState {
         let allMembers = loaded.flatMap(\.members)
         excusedVotesByMove = snapshot.toExcusedVotes(members: allMembers)
 
+        // Load attestation votes and apply derived attendance to unsettled moves
+        var newAttestation: [UUID: [UUID: [UUID: AttendanceStatus]]] = [:]
+        for (moveID, rows) in snapshot.attestationVotesByMove {
+            var voterMap: [UUID: [UUID: AttendanceStatus]] = [:]
+            for row in rows {
+                if voterMap[row.voterID] == nil { voterMap[row.voterID] = [:] }
+                voterMap[row.voterID]![row.subjectID] =
+                    row.vote == "showed" ? .showed : .missed
+            }
+            newAttestation[moveID] = voterMap
+        }
+        rawAttestationVotes = newAttestation
+
+        // Write derived attendance into any unsettled past moves
+        for gi in groups.indices {
+            for mi in groups[gi].moves.indices {
+                let move = groups[gi].moves[mi]
+                if move.date < Date() && move.attendance.isEmpty {
+                    let derived = derivedAttendance(for: move.id)
+                    if !derived.isEmpty {
+                        groups[gi].moves[mi].attendance = derived
+                    }
+                }
+            }
+        }
+
+        // Auto-resolve any votes that have passed their close time
+        for (moveID, vote) in excusedVotesByMove where vote.outcome == .pending && vote.closesAt < Date() {
+            let outcome: ExcusedVoteOutcome = vote.approvalCount > vote.denyCount ? .approved : .denied
+            excusedVotesByMove[moveID]?.outcome = outcome
+            // Push to backend (idempotent — multiple clients calling this is fine)
+            let vid = vote.id
+            let outcomeStr = outcome == .approved ? "approved" : "denied"
+            Task {
+                try? await FlakeBackend.shared.resolveExcusedVote(voteID: vid, outcome: outcomeStr)
+            }
+        }
+
         // Sync current user's RSVPs
         myRSVPByMove = [:]
         for group in loaded {
@@ -971,6 +1165,7 @@ final class AppState {
         myRSVPByMove = [:]
         roastReactionsByGroup = [:]
         myRoastReactionsByGroup = [:]
+        rawAttestationVotes = [:]
         pendingAppleSignInNonce = nil
         pendingJoinCode = nil
         stopLiveSync()

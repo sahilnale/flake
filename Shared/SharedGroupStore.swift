@@ -5,7 +5,7 @@ import Foundation
 /// so users can pick which group to invite friends to — no network calls needed.
 struct SharedGroupStore {
 
-    private static let key = "flake.shared.groups.v1"
+    private static let key = "flake.shared.groups.v2"   // bumped to bust old cache
     private static var defaults: UserDefaults {
         UserDefaults(suiteName: AppGroupConfig.suiteName) ?? .standard
     }
@@ -17,6 +17,9 @@ struct SharedGroupStore {
         let name: String
         let threadKey: String
         let memberCount: Int
+        /// Encoded URL of the most recent move, so the extension can show the RSVP
+        /// view without any async Supabase calls.
+        var recentMoveURL: String?
     }
 
     // MARK: - Write (called by main app after snapshot loads)
@@ -24,7 +27,13 @@ struct SharedGroupStore {
     static func save(_ groups: [FlakeGroup]) {
         let entries = groups.compactMap { g -> Entry? in
             guard let key = g.threadKey else { return nil }
-            return Entry(id: g.id, name: g.name, threadKey: key, memberCount: g.members.count)
+            return Entry(
+                id: g.id,
+                name: g.name,
+                threadKey: key,
+                memberCount: g.members.count,
+                recentMoveURL: g.currentMove?.asURL()?.absoluteString
+            )
         }
         saveEntries(entries)
     }
@@ -42,5 +51,16 @@ struct SharedGroupStore {
               let entries = try? JSONDecoder().decode([Entry].self, from: data)
         else { return [] }
         return entries
+    }
+
+    /// The most recent move across all cached groups, decoded from the stored URL.
+    static func loadRecentMove() -> Move? {
+        load()
+            .compactMap { entry -> Move? in
+                guard let urlString = entry.recentMoveURL,
+                      let url = URL(string: urlString) else { return nil }
+                return Move.fromMessageURL(url)
+            }
+            .first
     }
 }

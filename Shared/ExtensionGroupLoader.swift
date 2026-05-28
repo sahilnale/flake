@@ -85,5 +85,111 @@ actor ExtensionGroupLoader {
 
         return SharedGroupStore.load()
     }
+
+    // MARK: - Current user
+
+    func currentUserID() async -> UUID? {
+        try? await client.auth.session.user.id
+    }
+
+    // MARK: - Move persistence (fire-and-forget from extension)
+
+    /// Saves a move created in iMessage to Supabase so the main app can see it.
+    /// The move ID is caller-generated so the URL card stays stable.
+    func createMove(
+        id: UUID,
+        groupID: UUID,
+        creatorID: UUID,
+        title: String,
+        location: String,
+        date: Date
+    ) async {
+        let move = BackendMove(
+            id: id,
+            groupID: groupID,
+            title: title,
+            subtitle: "",
+            locationName: location,
+            locationLatitude: nil,
+            locationLongitude: nil,
+            startsAt: date,
+            creatorID: creatorID
+        )
+        // Insert move row — ignore conflict if already exists (re-insert on retry)
+        _ = try? await client
+            .from("moves")
+            .upsert(move, onConflict: "id")
+            .execute()
+
+        // Auto-RSVP the creator as locked in
+        let rsvp = BackendRSVP(moveID: id, userID: creatorID, status: "locked_in")
+        _ = try? await client
+            .from("rsvps")
+            .upsert(rsvp, onConflict: "move_id,user_id")
+            .execute()
+    }
+
+    // MARK: - RSVP persistence (fire-and-forget from extension)
+
+    /// Saves an RSVP submitted from iMessage to Supabase.
+    func submitRSVP(moveID: UUID, userID: UUID, status: RSVPStatus) async {
+        let rsvp = BackendRSVP(moveID: moveID, userID: userID, status: status.rawValue)
+        _ = try? await client
+            .from("rsvps")
+            .upsert(rsvp, onConflict: "move_id,user_id")
+            .execute()
+    }
+
+    // MARK: - Move fetching (for the iMessage panel — no card tap required)
+
+    /// Fetches the most recent moves for a group so the extension can show RSVPs
+    /// without requiring the user to tap a card first.
+    func fetchMoves(groupID: UUID) async -> [Move] {
+        guard let _ = try? await client.auth.session.user.id else { return [] }
+
+        do {
+            let backendMoves: [BackendMove] = try await client
+                .from("moves")
+                .select()
+                .eq("group_id", value: groupID.uuidString)
+                .order("starts_at", ascending: false)
+                .limit(5)
+                .execute()
+                .value
+
+            guard !backendMoves.isEmpty else { return [] }
+
+            let moveIDs = backendMoves.map(\.id.uuidString)
+            let rsvps: [BackendRSVP] = (try? await client
+                .from("rsvps")
+                .select()
+                .in("move_id", values: moveIDs)
+                .execute()
+                .value) ?? []
+
+            let rsvpsByMove = Dictionary(grouping: rsvps) { $0.moveID }
+
+            return backendMoves.map { bm in
+                let moveRSVPs = rsvpsByMove[bm.id] ?? []
+                let rsvpDict = moveRSVPs.reduce(into: [UUID: RSVPStatus]()) { result, rsvp in
+                    if let s = RSVPStatus(rawValue: rsvp.status) {
+                        result[rsvp.userID] = s
+                    }
+                }
+                return Move(
+                    id: bm.id,
+                    title: bm.title,
+                    subtitle: bm.subtitle,
+                    location: bm.locationName,
+                    date: bm.startsAt,
+                    creatorID: bm.creatorID ?? UUID(),
+                    rsvps: rsvpDict,
+                    groupID: bm.groupID
+                )
+            }
+        } catch {
+            return []
+        }
+    }
 }
 #endif

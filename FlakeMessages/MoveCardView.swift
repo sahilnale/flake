@@ -1,66 +1,129 @@
 import SwiftUI
 
-// MARK: - Compact bubble (app strip / drawer)
+// MARK: - Compact panel (iMessage app drawer)
 
 struct CompactBubbleView: View {
+    let groups: [SharedGroupStore.Entry]
     let onExpand: () -> Void
     let onInvite: () -> Void
     @Environment(\.flakeTheme) private var theme
 
     var body: some View {
-        HStack(spacing: 10) {
-            // App icon
-            ZStack {
-                theme.gradient
-                Text("f.")
-                    .font(.system(size: 18, weight: .bold, design: .serif))
-                    .italic()
-                    .foregroundStyle(.white)
-            }
-            .frame(width: 44, height: 44)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+        ZStack {
+            Color.flakeBG.ignoresSafeArea()
 
-            // Send a move
-            Button(action: onExpand) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("send a move")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text("create RSVP card →")
-                        .font(.system(size: 11))
-                        .foregroundStyle(Color.white.opacity(0.45))
+            // Subtle gradient bloom top-left
+            RadialGradient(
+                colors: [theme.g1.opacity(0.18), .clear],
+                center: .init(x: 0, y: 0),
+                startRadius: 0,
+                endRadius: 220
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // ── Header ───────────────────────────────────────────────────
+                HStack(spacing: 8) {
+                    // Brand mark
+                    ZStack {
+                        theme.gradient
+                        Text("f.")
+                            .font(.system(size: 15, weight: .bold, design: .serif))
+                            .italic()
+                            .foregroundStyle(.white)
+                    }
+                    .frame(width: 30, height: 30)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                    Text("flake.")
+                        .font(.system(size: 15, weight: .semibold, design: .serif))
+                        .italic()
+                        .foregroundStyle(theme.gradient2)
+
+                    if let group = groups.first {
+                        Text("·")
+                            .foregroundStyle(Color.white.opacity(0.25))
+                            .font(.system(size: 13))
+                        Text(group.name)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color.white.opacity(0.5))
+                            .lineLimit(1)
+                    }
+
+                    Spacer()
+
+                    Text("keeps score.")
+                        .font(.system(size: 10, design: .monospaced))
+                        .tracking(0.3)
+                        .foregroundStyle(Color.white.opacity(0.25))
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(Color.white.opacity(0.06))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.white.opacity(0.1), lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .buttonStyle(.plain)
+                .padding(.horizontal, 16)
+                .padding(.top, 14)
+                .padding(.bottom, 12)
 
-            // Invite friends
-            Button(action: onInvite) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("invite friends")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.white)
-                    Text("add to group →")
-                        .font(.system(size: 11))
-                        .foregroundStyle(theme.g1.opacity(0.8))
+                // ── Action row ───────────────────────────────────────────────
+                HStack(spacing: 10) {
+                    // Primary: send a move
+                    Button(action: onExpand) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "bolt.fill")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(theme.g1)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("send a move")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(.white)
+                                Text("create RSVP card")
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundStyle(Color.white.opacity(0.4))
+                            }
+                            Spacer()
+                            Text("→")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(theme.g1)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 11)
+                        .background(
+                            LinearGradient(
+                                colors: [theme.g1.opacity(0.14), theme.g2.opacity(0.07)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(theme.g1.opacity(0.28), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .buttonStyle(.plain)
+
+                    // Secondary: invite friends
+                    Button(action: onInvite) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "person.badge.plus")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.white.opacity(0.6))
+                            Text("invite")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.white)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 11)
+                        .background(Color.white.opacity(0.07))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(theme.g1.opacity(0.1))
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(theme.g1.opacity(0.25), lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .padding(.horizontal, 16)
+                .padding(.bottom, 14)
             }
-            .buttonStyle(.plain)
-
-            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.flakeBG)
     }
 }
 

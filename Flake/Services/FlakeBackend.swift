@@ -8,12 +8,14 @@ enum FlakeBackendError: LocalizedError {
     case supabasePackageMissing
     case missingUser
     case notAuthenticated
+    case deleteBlocked(String)   // RLS or FK prevented the delete
 
     var errorDescription: String? {
         switch self {
-        case .supabasePackageMissing: return "Supabase Swift package is not resolved yet."
-        case .missingUser:           return "Supabase did not return an authenticated user."
-        case .notAuthenticated:      return "No authenticated session found."
+        case .supabasePackageMissing:   return "Supabase Swift package is not resolved yet."
+        case .missingUser:              return "Supabase did not return an authenticated user."
+        case .notAuthenticated:         return "No authenticated session found."
+        case .deleteBlocked(let table): return "Delete was blocked on '\(table)' — check Supabase RLS policies."
         }
     }
 }
@@ -274,6 +276,37 @@ actor FlakeBackend {
         #endif
     }
 
+    // MARK: - Leave / Delete group
+
+    /// Removes the current user from a group (member leaves; group persists).
+    func leaveGroup(groupID: UUID) async throws {
+        #if canImport(Supabase)
+        let uid = try await currentSessionUserID()
+        try await client
+            .from("group_members")
+            .delete()
+            .eq("group_id", value: groupID.uuidString)
+            .eq("user_id", value: uid.uuidString)
+            .execute()
+        #else
+        throw FlakeBackendError.supabasePackageMissing
+        #endif
+    }
+
+    /// Deletes an entire group. All child rows (group_members, moves, rsvps, etc.)
+    /// cascade automatically via ON DELETE CASCADE in the schema.
+    func deleteGroup(groupID: UUID) async throws {
+        #if canImport(Supabase)
+        let deleted: [BackendGroup] = try await client
+            .from("groups").delete().eq("id", value: groupID.uuidString).select().execute().value
+        if deleted.isEmpty {
+            throw FlakeBackendError.deleteBlocked("groups")
+        }
+        #else
+        throw FlakeBackendError.supabasePackageMissing
+        #endif
+    }
+
     // MARK: - Moves
 
     func loadMoves(for groupID: UUID) async throws -> [BackendMove] {
@@ -316,6 +349,20 @@ actor FlakeBackend {
         // Auto-RSVP creator as locked_in
         try await updateRSVP(moveID: created.id, userID: creatorID, status: .lockedIn)
         return created
+        #else
+        throw FlakeBackendError.supabasePackageMissing
+        #endif
+    }
+
+    /// Deletes a move. All child rows (rsvps, attendance, excused_votes, etc.)
+    /// cascade automatically via ON DELETE CASCADE in the schema.
+    func deleteMove(moveID: UUID) async throws {
+        #if canImport(Supabase)
+        let deleted: [BackendMove] = try await client
+            .from("moves").delete().eq("id", value: moveID.uuidString).select().execute().value
+        if deleted.isEmpty {
+            throw FlakeBackendError.deleteBlocked("moves")
+        }
         #else
         throw FlakeBackendError.supabasePackageMissing
         #endif
@@ -490,6 +537,48 @@ actor FlakeBackend {
         #endif
     }
 
+    // MARK: - Attendance Votes ("who showed up?")
+
+    func loadAttendanceVotes(for moveIDs: [UUID]) async throws -> [BackendAttendanceVote] {
+        #if canImport(Supabase)
+        guard !moveIDs.isEmpty else { return [] }
+        let ids = moveIDs.map(\.uuidString)
+        let response: [BackendAttendanceVote] = try await client
+            .from("attendance_votes")
+            .select()
+            .in("move_id", values: ids)
+            .execute()
+            .value
+        return response
+        #else
+        return []
+        #endif
+    }
+
+    /// Submits (or updates) the current user's attestation for every member of a move.
+    /// Each entry is upserted so re-voting is safe.
+    func submitAttendanceVotes(moveID: UUID,
+                               voterID: UUID,
+                               votes: [UUID: AttendanceStatus]) async throws {
+        #if canImport(Supabase)
+        guard !votes.isEmpty else { return }
+        let rows = votes.map { subjectID, status in
+            BackendAttendanceVote(
+                moveID:    moveID,
+                voterID:   voterID,
+                subjectID: subjectID,
+                vote:      status == .showed ? "showed" : "missed"
+            )
+        }
+        try await client
+            .from("attendance_votes")
+            .upsert(rows, onConflict: "move_id,voter_id,subject_id")
+            .execute()
+        #else
+        throw FlakeBackendError.supabasePackageMissing
+        #endif
+    }
+
     // MARK: - Roast Reactions
 
     /// Returns all reactions for the given groups (any season).
@@ -557,7 +646,8 @@ actor FlakeBackend {
         guard !groups.isEmpty else {
             return BackendSnapshot(groups: [], membersByGroup: [:], movesByGroup: [:],
                                    rsvpsByMove: [:], attendanceByMove: [:],
-                                   excusedVotesByMove: [:], ballotsByVote: [:])
+                                   excusedVotesByMove: [:], ballotsByVote: [:],
+                                   attestationVotesByMove: [:])
         }
         let groupIDs = groups.map(\.id)
 
@@ -567,10 +657,12 @@ actor FlakeBackend {
 
         let moveIDs = allMoves.map(\.id)
 
-        async let rsvpsTask    = loadAllRSVPs(for: moveIDs)
-        async let attendTask   = loadAllAttendance(for: moveIDs)
-        async let excVotesTask = loadExcusedVotes(for: moveIDs)
-        let (allRSVPs, allAttendance, allExcVotes) = try await (rsvpsTask, attendTask, excVotesTask)
+        async let rsvpsTask      = loadAllRSVPs(for: moveIDs)
+        async let attendTask     = loadAllAttendance(for: moveIDs)
+        async let excVotesTask   = loadExcusedVotes(for: moveIDs)
+        async let attestTask     = loadAttendanceVotes(for: moveIDs)
+        let (allRSVPs, allAttendance, allExcVotes, allAttestVotes) =
+            try await (rsvpsTask, attendTask, excVotesTask, attestTask)
 
         let voteIDs = allExcVotes.map(\.id)
         let allBallots = try await loadExcusedBallots(for: voteIDs)
@@ -578,11 +670,12 @@ actor FlakeBackend {
         let movesByGroup: [UUID: [BackendMove]] = Dictionary(grouping: allMoves) { $0.groupID }
         let rsvpsByMove: [UUID: [BackendRSVP]] = Dictionary(grouping: allRSVPs) { $0.moveID }
         let attendanceByMove: [UUID: [BackendAttendance]] = Dictionary(grouping: allAttendance) { $0.moveID }
-        // Only one excused vote per move (latest petitioner wins for display)
         let excusedVotesByMove: [UUID: BackendExcusedVote] = Dictionary(
             allExcVotes.map { ($0.moveID, $0) }, uniquingKeysWith: { _, new in new }
         )
         let ballotsByVote: [UUID: [BackendExcusedBallot]] = Dictionary(grouping: allBallots) { $0.voteID }
+        let attestationVotesByMove: [UUID: [BackendAttendanceVote]] =
+            Dictionary(grouping: allAttestVotes) { $0.moveID }
 
         return BackendSnapshot(
             groups: groups,
@@ -591,7 +684,8 @@ actor FlakeBackend {
             rsvpsByMove: rsvpsByMove,
             attendanceByMove: attendanceByMove,
             excusedVotesByMove: excusedVotesByMove,
-            ballotsByVote: ballotsByVote
+            ballotsByVote: ballotsByVote,
+            attestationVotesByMove: attestationVotesByMove
         )
         #else
         throw FlakeBackendError.supabasePackageMissing

@@ -7,6 +7,9 @@ struct GroupsView: View {
     @State private var showCreate = false
     @State private var showJoin = false
     @State private var showSeasonSettings = false
+    @State private var groupPendingDelete: FlakeGroup? = nil
+    @State private var showLeaveConfirm = false
+    @State private var showDeleteGroupConfirm = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -112,6 +115,34 @@ struct GroupsView: View {
                         .padding(.bottom, 8)
                     }
 
+                    // Leave / delete group — shown for the currently selected group
+                    if let group = state.selectedGroup {
+                        let isLeader = group.groupLeaderID == state.currentUserID
+                        Button {
+                            groupPendingDelete = group
+                            if isLeader {
+                                showDeleteGroupConfirm = true
+                            } else {
+                                showLeaveConfirm = true
+                            }
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: isLeader ? "trash" : "rectangle.portrait.and.arrow.right")
+                                    .font(.system(size: 13, weight: .semibold))
+                                Text(isLeader ? "delete group" : "leave group")
+                                    .font(.system(size: 14, weight: .medium))
+                                Spacer()
+                            }
+                            .foregroundStyle(theme.bad)
+                            .padding(16)
+                            .background(theme.bad.opacity(0.06))
+                            .overlay(RoundedRectangle(cornerRadius: 18).stroke(theme.bad.opacity(0.18), lineWidth: 1))
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.bottom, 8)
+                    }
+
                     // Start / join
                     HStack(spacing: 8) {
                         Button { showCreate = true } label: {
@@ -163,6 +194,32 @@ struct GroupsView: View {
             if let group = state.selectedGroup {
                 SeasonSettingsSheet(group: group)
             }
+        }
+        .confirmationDialog(
+            "leave \"\(groupPendingDelete?.name ?? "group")\"?",
+            isPresented: $showLeaveConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("leave group", role: .destructive) {
+                if let g = groupPendingDelete { state.leaveGroup(g) }
+                groupPendingDelete = nil
+            }
+            Button("cancel", role: .cancel) { groupPendingDelete = nil }
+        } message: {
+            Text("you'll lose your stats and rank in this group.")
+        }
+        .confirmationDialog(
+            "delete \"\(groupPendingDelete?.name ?? "group")\"?",
+            isPresented: $showDeleteGroupConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("delete group for everyone", role: .destructive) {
+                if let g = groupPendingDelete { state.deleteGroup(g) }
+                groupPendingDelete = nil
+            }
+            Button("cancel", role: .cancel) { groupPendingDelete = nil }
+        } message: {
+            Text("this permanently deletes the group, all moves, and all stats for everyone in it.")
         }
     }
 }

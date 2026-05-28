@@ -156,15 +156,26 @@ struct RecapView: View {
                     }
                     .padding(.bottom, 22)
 
+                    let isGroupLeader = state.selectedGroup?.groupLeaderID == state.currentUserID
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
-                            state.featureScreen = nil
-                            state.selectedTab = .home
+                            // Group leader goes to Groups where they can configure the new season.
+                            // Everyone else goes home.
+                            state.featureScreen = isGroupLeader ? .groups : nil
+                            if !isGroupLeader { state.selectedTab = .home }
                         }
                     } label: {
                         HStack {
-                            Text("start season \(String(format: "%02d", seasonNumber + 1))")
-                                .font(.system(size: 16, weight: .semibold))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("start season \(String(format: "%02d", seasonNumber + 1))")
+                                    .font(.system(size: 16, weight: .semibold))
+                                if isGroupLeader {
+                                    Text("configure season settings →")
+                                        .font(.mono(10))
+                                        .tracking(0.4)
+                                        .opacity(0.65)
+                                }
+                            }
                             Spacer()
                             Text("→").font(.system(size: 18))
                         }

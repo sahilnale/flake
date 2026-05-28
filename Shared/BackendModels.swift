@@ -132,6 +132,23 @@ struct BackendExcusedBallot: Codable, Hashable {
     }
 }
 
+// MARK: - Attendance Votes (democratic "who showed up?" system)
+
+/// One row per voter-subject pair per move. Majority determines attendance.
+struct BackendAttendanceVote: Codable, Hashable {
+    var moveID:    UUID
+    var voterID:   UUID
+    var subjectID: UUID
+    var vote:      String    // "showed" | "missed"
+
+    enum CodingKeys: String, CodingKey {
+        case moveID    = "move_id"
+        case voterID   = "voter_id"
+        case subjectID = "subject_id"
+        case vote
+    }
+}
+
 // MARK: - Roast Reactions
 
 struct BackendRoastReaction: Codable, Hashable {
@@ -154,10 +171,11 @@ struct BackendRoastReaction: Codable, Hashable {
 
 struct BackendSnapshot {
     var groups: [BackendGroup]
-    var membersByGroup: [UUID: [BackendProfile]]       // group_id → profiles
-    var movesByGroup: [UUID: [BackendMove]]            // group_id → moves
-    var rsvpsByMove: [UUID: [BackendRSVP]]             // move_id  → rsvps
-    var attendanceByMove: [UUID: [BackendAttendance]]  // move_id  → attendance rows
-    var excusedVotesByMove: [UUID: BackendExcusedVote] // move_id  → single excused request
-    var ballotsByVote: [UUID: [BackendExcusedBallot]]  // vote_id  → ballots
+    var membersByGroup: [UUID: [BackendProfile]]            // group_id → profiles
+    var movesByGroup: [UUID: [BackendMove]]                 // group_id → moves
+    var rsvpsByMove: [UUID: [BackendRSVP]]                  // move_id  → rsvps
+    var attendanceByMove: [UUID: [BackendAttendance]]       // move_id  → manual attendance rows
+    var excusedVotesByMove: [UUID: BackendExcusedVote]      // move_id  → single excused request
+    var ballotsByVote: [UUID: [BackendExcusedBallot]]       // vote_id  → ballots
+    var attestationVotesByMove: [UUID: [BackendAttendanceVote]] // move_id → attestation votes
 }

@@ -128,14 +128,25 @@ private struct VoteContent: View {
             }
             .padding(.bottom, 18)
 
-            if vote.outcome == .pending && vote.totalVotes > 0
-                && state.activeMove.creatorID == state.currentUserID {
+            let isVoteExpired = vote.closesAt < Date()
+            let isPetitioner  = vote.petitioner.id == state.currentUserID
+            let canResolve = vote.outcome == .pending
+                && !isPetitioner   // petitioner can't judge their own case
+                && (vote.totalVotes > 0 || isVoteExpired)
+                && (state.activeMove.creatorID == state.currentUserID
+                    || state.selectedGroup?.groupLeaderID == state.currentUserID)
+            if canResolve {
                 Button {
                     state.resolveActiveExcusedVote()
                 } label: {
                     HStack {
-                        Text("resolve vote")
-                            .font(.system(size: 14, weight: .semibold))
+                        if isVoteExpired && vote.totalVotes == 0 {
+                            Text("vote expired — close")
+                                .font(.system(size: 14, weight: .semibold))
+                        } else {
+                            Text("resolve vote")
+                                .font(.system(size: 14, weight: .semibold))
+                        }
                         Spacer()
                         Text(vote.approvalCount > vote.denyCount ? "approve → 0 pts" : "deny → −\(vote.pointsAtRisk)")
                             .font(.mono(10))
@@ -145,7 +156,7 @@ private struct VoteContent: View {
                     .foregroundStyle(.white)
                     .padding(14)
                     .background(Color.white.opacity(0.06))
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.g3.opacity(0.25), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(isVoteExpired ? theme.bad.opacity(0.35) : theme.g3.opacity(0.25), lineWidth: 1))
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                 }
                 .buttonStyle(.plain)
@@ -163,7 +174,7 @@ private struct VoteContent: View {
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.vertical, 18)
             } else if vote.petitioner.id == state.currentUserID {
-                Text("Your request is live. The group can vote, and you can watch the damage control unfold here.")
+                Text("Your request is live. The group votes — majority wins, tie goes to denied. Auto-closes \(relativeClose(vote.closesAt)).")
                     .font(.system(size: 13, weight: .regular, design: .serif))
                     .italic()
                     .foregroundStyle(Color.white.opacity(0.5))
@@ -241,7 +252,10 @@ private struct VoteContent: View {
     private func eyebrowText(for vote: ExcusedVote) -> String {
         switch vote.outcome {
         case .pending:
-            return "★ open vote · closes \(relativeClose(vote.closesAt))"
+            let expired = vote.closesAt < Date()
+            return expired
+                ? "★ vote expired · auto-resolving"
+                : "★ open vote · auto-closes \(relativeClose(vote.closesAt))"
         case .approved:
             return "★ approved · 0 pts lost"
         case .denied:

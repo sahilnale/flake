@@ -4,6 +4,8 @@ struct HomeView: View {
     @Environment(AppState.self) private var state
     @Environment(\.flakeTheme) private var theme
 
+    @State private var showDeleteMoveConfirm = false
+
     private var move: Move { state.activeMove }
     private var friends: [Member] {
         state.activeFriends.filter { $0.id != state.currentUserID }
@@ -14,6 +16,16 @@ struct HomeView: View {
     /// True when the current user called this specific move.
     private var isMoveLeader: Bool {
         move.creatorID == state.currentUserID
+    }
+
+    /// Past moves (within 7 days) that the current user hasn't attested yet.
+    private var movesNeedingAttestation: [Move] {
+        let cutoff = Date().addingTimeInterval(-7 * 86400)
+        return state.activeMoves.filter { m in
+            m.date < Date()
+            && m.date >= cutoff
+            && !state.hasAttested(moveID: m.id)
+        }
     }
     /// True when the current user created the group itself.
     private var isGroupAdmin: Bool {
@@ -35,7 +47,11 @@ struct HomeView: View {
     var body: some View {
         if state.groups.isEmpty {
             NoGroupsView()
-        } else { homeContent }
+        } else if state.activeMoves.isEmpty {
+            NoMovesView()
+        } else {
+            homeContent
+        }
     }
 
     @ViewBuilder
@@ -134,6 +150,53 @@ struct HomeView: View {
                     }
                     .padding(.bottom, 20)
 
+                    // Attestation banners — one per past move awaiting votes
+                    if !movesNeedingAttestation.isEmpty {
+                        VStack(spacing: 8) {
+                            ForEach(movesNeedingAttestation) { pastMove in
+                                Button {
+                                    state.attestationSheetMoveID = pastMove.id
+                                } label: {
+                                    HStack(spacing: 12) {
+                                        ZStack {
+                                            theme.gradient2
+                                            Text("👥")
+                                                .font(.system(size: 14))
+                                        }
+                                        .frame(width: 32, height: 32)
+                                        .clipShape(RoundedRectangle(cornerRadius: 9))
+
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("who showed up?")
+                                                .font(.system(size: 13, weight: .semibold))
+                                                .foregroundStyle(.white)
+                                            let voterCount = state.attestationVoterCount(moveID: pastMove.id)
+                                            Text("\(pastMove.title.lowercased()) · \(voterCount) of \(state.activeFriends.count) voted")
+                                                .font(.mono(11))
+                                                .tracking(0.3)
+                                                .foregroundStyle(Color.white.opacity(0.5))
+                                        }
+
+                                        Spacer()
+                                        Text("vote →")
+                                            .font(.system(size: 12, weight: .semibold))
+                                            .foregroundStyle(theme.g2)
+                                    }
+                                    .padding(12)
+                                    .background(LinearGradient(
+                                        colors: [theme.g2.opacity(0.12), theme.g1.opacity(0.05)],
+                                        startPoint: .topLeading, endPoint: .bottomTrailing))
+                                    .overlay(RoundedRectangle(cornerRadius: 14)
+                                        .stroke(theme.g2.opacity(0.25), lineWidth: 1))
+                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 16)
+                    }
+
                     // Move title
                     VStack(alignment: .leading, spacing: 4) {
                         titleText(move.title)
@@ -191,13 +254,20 @@ struct HomeView: View {
 
                     // Lineup header
                     HStack {
-                        Text("the lineup")
+                        Text(move.isSettled ? "final attendance" : "the lineup")
                             .font(.system(size: 13, weight: .medium))
                             .foregroundStyle(Color.white.opacity(0.7))
                         Spacer()
-                        Text("\(lockedInCount) of \(friends.count + 1) locked in")
-                            .font(.mono(11))
-                            .foregroundStyle(Color.white.opacity(0.4))
+                        if move.isSettled {
+                            let showedCount = move.attendance.values.filter { $0 == .showed }.count
+                            Text("\(showedCount) showed · \(move.attendance.values.filter { $0 == .missed }.count) missed")
+                                .font(.mono(11))
+                                .foregroundStyle(Color.white.opacity(0.4))
+                        } else {
+                            Text("\(lockedInCount) of \(friends.count + 1) locked in")
+                                .font(.mono(11))
+                                .foregroundStyle(Color.white.opacity(0.4))
+                        }
                     }
                     .padding(.horizontal, 24)
                     .padding(.bottom, 12)
@@ -208,21 +278,23 @@ struct HomeView: View {
                             initials: "u",
                             colorHex: state.currentUser.avatarColorHex,
                             name: "you",
-                            tag: "tap to RSVP",
+                            tag: move.isSettled ? nil : "tap to RSVP",
                             status: myStatus,
-                            isYou: true
+                            isYou: true,
+                            attendance: move.attendance[state.currentUserID],
+                            isSettled: move.isSettled
                         )
                         ForEach(friends) { member in
-                            if let rsvp = move.rsvps[member.id] {
-                                LineupRow(
-                                    initials: member.initials,
-                                    colorHex: member.avatarColorHex,
-                                    name: member.name,
-                                    tag: nil,
-                                    status: rsvp,
-                                    isYou: false
-                                )
-                            }
+                            LineupRow(
+                                initials: member.initials,
+                                colorHex: member.avatarColorHex,
+                                name: member.name,
+                                tag: nil,
+                                status: move.rsvps[member.id] ?? .silent,
+                                isYou: false,
+                                attendance: move.attendance[member.id],
+                                isSettled: move.isSettled
+                            )
                         }
                     }
                     .padding(.horizontal, 24)
@@ -268,27 +340,55 @@ struct HomeView: View {
                         .padding(.top, 18)
                     }
 
-                    // CTA
-                    Button {
-                        state.rsvpSheetVisible = true
-                    } label: {
-                        HStack {
-                            Text(myStatus == .silent ? "RSVP" : "update RSVP")
-                                .font(.system(size: 16, weight: .semibold))
+                    // CTA — locked after settlement
+                    if move.isSettled {
+                        let myAttendance = move.attendance[state.currentUserID]
+                        HStack(spacing: 12) {
+                            Image(systemName: myAttendance == .showed ? "checkmark.seal.fill" : "xmark.seal.fill")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(myAttendance == .showed ? theme.good : theme.bad)
+                            Text("attendance settled")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(Color.white.opacity(0.7))
                             Spacer()
-                            Text("→")
-                                .font(.system(size: 18))
+                            Text(myAttendance == .showed
+                                 ? "+\(state.pointDelta(for: state.currentUserID, in: move)) pts"
+                                 : "\(state.pointDelta(for: state.currentUserID, in: move)) pts")
+                                .font(.mono(12))
+                                .foregroundStyle(myAttendance == .showed ? theme.good : theme.bad)
                         }
-                        .foregroundStyle(.white)
                         .padding(18)
-                        .background(theme.gradient2)
+                        .background(Color.white.opacity(0.04))
+                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(Color.white.opacity(0.07), lineWidth: 1))
                         .clipShape(RoundedRectangle(cornerRadius: 18))
-                        .shadow(color: theme.g1.opacity(0.3), radius: 16, y: 8)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 20)
+                    } else {
+                        Button {
+                            state.rsvpSheetVisible = true
+                        } label: {
+                            HStack {
+                                Text(myStatus == .silent ? "RSVP" : "update RSVP")
+                                    .font(.system(size: 16, weight: .semibold))
+                                Spacer()
+                                Text("→")
+                                    .font(.system(size: 18))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(18)
+                            .background(theme.gradient2)
+                            .clipShape(RoundedRectangle(cornerRadius: 18))
+                            .shadow(color: theme.g1.opacity(0.3), radius: 16, y: 8)
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.top, 20)
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 20)
 
-                    if myStatus == .flaked && state.activeExcusedVote == nil {
+                    // Excused absence — available if you flaked OR were settled as missed
+                    let canRequestExcused = (myStatus == .flaked ||
+                                            (move.isSettled && move.attendance[state.currentUserID] == .missed))
+                                           && state.activeExcusedVote == nil
+                    if canRequestExcused {
                         Button {
                             state.excusedRequestSheetVisible = true
                         } label: {
@@ -315,15 +415,15 @@ struct HomeView: View {
                         .padding(.top, 10)
                     }
 
-                    if isMoveLeader {
+                    if isMoveLeader && !move.isSettled {
                         Button {
                             state.attendanceSheetVisible = true
                         } label: {
                             HStack(spacing: 10) {
-                                Image(systemName: move.isSettled ? "checkmark.seal.fill" : "person.2.badge.gearshape")
+                                Image(systemName: "person.2.badge.gearshape")
                                     .font(.system(size: 13, weight: .semibold))
-                                    .foregroundStyle(move.isSettled ? theme.good : .white)
-                                Text(move.isSettled ? "attendance settled" : "settle attendance")
+                                    .foregroundStyle(.white)
+                                Text("settle attendance")
                                     .font(.system(size: 14, weight: .semibold))
                                 Spacer()
                                 Text("\(state.pointDelta(for: state.currentUserID, in: move) >= 0 ? "+" : "")\(state.pointDelta(for: state.currentUserID, in: move)) pts")
@@ -341,6 +441,35 @@ struct HomeView: View {
                         .buttonStyle(.plain)
                         .padding(.horizontal, 24)
                         .padding(.top, 10)
+
+                        // Delete move — only move creator, with confirmation
+                        Button {
+                            showDeleteMoveConfirm = true
+                        } label: {
+                            HStack(spacing: 10) {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 13, weight: .semibold))
+                                Text("delete move")
+                                    .font(.system(size: 14, weight: .semibold))
+                                Spacer()
+                            }
+                            .foregroundStyle(theme.bad)
+                            .padding(14)
+                            .background(theme.bad.opacity(0.07))
+                            .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.bad.opacity(0.2), lineWidth: 1))
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.horizontal, 24)
+                        .padding(.top, 8)
+                        .confirmationDialog("delete \"\(move.title)\"?", isPresented: $showDeleteMoveConfirm, titleVisibility: .visible) {
+                            Button("delete move", role: .destructive) {
+                                state.deleteMove(move)
+                            }
+                            Button("cancel", role: .cancel) {}
+                        } message: {
+                            Text("this removes the move and all RSVPs permanently.")
+                        }
                     }
 
                     Spacer(minLength: 0)
@@ -496,6 +625,10 @@ private struct LineupRow: View {
     let tag: String?
     let status: RSVPStatus
     let isYou: Bool
+    var attendance: AttendanceStatus? = nil
+    var isSettled: Bool = false
+
+    @Environment(\.flakeTheme) private var theme
 
     var body: some View {
         HStack(spacing: 12) {
@@ -513,11 +646,114 @@ private struct LineupRow: View {
                 }
             }
             Spacer()
-            PillView(status: status)
+            // After settlement: show attendance result; before: show RSVP pill
+            if isSettled, let att = attendance {
+                HStack(spacing: 4) {
+                    Image(systemName: att == .showed ? "checkmark.circle.fill" : "xmark.circle.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                    Text(att == .showed ? "showed" : "missed")
+                        .font(.mono(10))
+                        .tracking(0.4)
+                }
+                .foregroundStyle(att == .showed ? theme.good : theme.bad)
+            } else if isSettled {
+                // Not in attendance dict — wasn't settled (e.g. member joined after)
+                Text("—")
+                    .font(.mono(11))
+                    .foregroundStyle(Color.white.opacity(0.3))
+            } else {
+                PillView(status: status)
+            }
         }
         .padding(.vertical, 11)
         .overlay(alignment: .bottom) {
             Color.white.opacity(0.06).frame(height: 1)
+        }
+    }
+}
+
+// MARK: - NoMovesView
+
+private struct NoMovesView: View {
+    @Environment(AppState.self) private var state
+    @Environment(\.flakeTheme) private var theme
+
+    var body: some View {
+        ZStack {
+            Color.flakeBG.ignoresSafeArea()
+            OmbreBackground(style: .center)
+
+            VStack(alignment: .leading, spacing: 0) {
+
+                // ── top bar ────────────────────────────────────────────────
+                HStack {
+                    EyebrowLabel(text: "0 moves", color: Color.white.opacity(0.3))
+
+                    Spacer()
+
+                    // Group switcher
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            state.featureScreen = .groups
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(state.selectedGroup?.name ?? "your group")
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 9, weight: .semibold))
+                                .foregroundStyle(Color.white.opacity(0.5))
+                        }
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
+                        .background(Color.white.opacity(0.08))
+                        .overlay(Capsule().stroke(Color.white.opacity(0.1), lineWidth: 1))
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.top, 60)
+                .padding(.bottom, 64)
+
+                Spacer()
+
+                // ── headline ───────────────────────────────────────────────
+                (Text("no\n").font(.display(64))
+                    + Text("moves.").font(.display(64)).italic()
+                        .foregroundStyle(theme.gradient2))
+                    .foregroundStyle(.white)
+                    .lineSpacing(-8)
+                    .padding(.bottom, 14)
+
+                Text("no moves planned yet. be the move leader — call the spot and earn **+25 points**.")
+                    .font(.system(size: 15))
+                    .foregroundStyle(Color.white.opacity(0.55))
+                    .lineSpacing(4)
+                    .padding(.bottom, 32)
+
+                // ── CTA ────────────────────────────────────────────────────
+                Button {
+                    state.createMoveSheetVisible = true
+                } label: {
+                    HStack {
+                        Text("call the first move")
+                            .font(.system(size: 16, weight: .semibold))
+                        Spacer()
+                        Text("→")
+                            .font(.system(size: 18))
+                    }
+                    .foregroundStyle(.white)
+                    .padding(18)
+                    .background(theme.gradient2)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .shadow(color: theme.g1.opacity(0.3), radius: 16, y: 8)
+                }
+                .buttonStyle(.plain)
+
+                Spacer()
+            }
+            .padding(.horizontal, 24)
         }
     }
 }

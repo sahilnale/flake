@@ -6,7 +6,7 @@ struct ContentView: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        @Bindable var state = state
+        @Bindable var bindableState = state
         ZStack(alignment: .bottom) {
             Color.flakeBG.ignoresSafeArea()
 
@@ -32,7 +32,7 @@ struct ContentView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if state.featureScreen == nil && !state.shouldShowAuthGate && !state.isBootstrappingData {
-                FlakeNavBar(selected: $state.selectedTab)
+                FlakeNavBar(selected: $bindableState.selectedTab)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 8)
             }
@@ -47,33 +47,43 @@ struct ContentView: View {
                 .frame(maxHeight: .infinity, alignment: .top)
             }
         }
-        .sheet(isPresented: $state.rsvpSheetVisible) {
+        .sheet(isPresented: $bindableState.rsvpSheetVisible) {
             RSVPView()
                 .environment(state)
                 .environment(\.flakeTheme, state.theme)
         }
-        .sheet(isPresented: $state.voteSheetVisible) {
+        .sheet(isPresented: $bindableState.voteSheetVisible) {
             VoteView()
                 .environment(state)
                 .environment(\.flakeTheme, state.theme)
         }
-        .sheet(isPresented: $state.createMoveSheetVisible) {
+        .sheet(isPresented: $bindableState.createMoveSheetVisible) {
             CreateMoveSheet()
                 .environment(state)
                 .environment(\.flakeTheme, state.theme)
         }
-        .sheet(isPresented: $state.calendarSheetVisible) {
+        .sheet(isPresented: $bindableState.calendarSheetVisible) {
             EventCalendarSheet()
                 .environment(state)
                 .environment(\.flakeTheme, state.theme)
         }
-        .sheet(isPresented: $state.excusedRequestSheetVisible) {
+        .sheet(isPresented: $bindableState.excusedRequestSheetVisible) {
             RequestExcusedAbsenceSheet()
                 .environment(state)
                 .environment(\.flakeTheme, state.theme)
         }
-        .sheet(isPresented: $state.attendanceSheetVisible) {
+        .sheet(isPresented: $bindableState.attendanceSheetVisible) {
             AttendanceSettlementSheet()
+                .environment(state)
+                .environment(\.flakeTheme, state.theme)
+        }
+        .sheet(item: Binding(
+            get: { state.attestationSheetMoveID.flatMap { id in
+                state.groups.flatMap(\.moves).first { $0.id == id }
+            }},
+            set: { _ in state.attestationSheetMoveID = nil }
+        )) { move in
+            AttestationSheet(move: move)
                 .environment(state)
                 .environment(\.flakeTheme, state.theme)
         }
