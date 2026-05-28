@@ -221,26 +221,50 @@ struct HomeView: View {
                     .padding(.horizontal, 24)
                     .padding(.bottom, 10)
 
-                    // Date chip
-                    if move.date >= Date() && !move.isSettled {
-                        HStack(spacing: 6) {
-                            Text(specificDateTime(move.date))
-                                .foregroundStyle(.white.opacity(0.9))
-                            Text("·")
-                                .foregroundStyle(.white.opacity(0.3))
-                            Text(relativeClose(move.date))
-                                .foregroundStyle(theme.g1)
+                    // Date + location chips
+                    HStack(spacing: 8) {
+                        if move.date >= Date() && !move.isSettled {
+                            HStack(spacing: 6) {
+                                Text(specificDateTime(move.date))
+                                    .foregroundStyle(.white.opacity(0.9))
+                                Text("·")
+                                    .foregroundStyle(.white.opacity(0.3))
+                                Text(relativeClose(move.date))
+                                    .foregroundStyle(theme.g1)
+                            }
+                            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Color.white.opacity(0.1))
+                            .clipShape(Capsule())
                         }
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 5)
-                        .background(Color.white.opacity(0.1))
-                        .clipShape(Capsule())
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 16)
-                    } else {
-                        Spacer().frame(height: 10)
+
+                        if !move.location.isEmpty {
+                            Button {
+                                openInMaps(move.location)
+                            } label: {
+                                HStack(spacing: 5) {
+                                    Image(systemName: "mappin.and.ellipse")
+                                        .font(.system(size: 10, weight: .semibold))
+                                        .foregroundStyle(theme.g2)
+                                    Text(move.location)
+                                        .foregroundStyle(.white.opacity(0.9))
+                                        .lineLimit(1)
+                                }
+                                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 5)
+                                .background(Color.white.opacity(0.1))
+                                .clipShape(Capsule())
+                                .overlay(Capsule().stroke(theme.g2.opacity(0.25), lineWidth: 1))
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        Spacer(minLength: 0)
                     }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
 
                     // Countdown
                     let tc = timeComponents
@@ -479,6 +503,13 @@ struct HomeView: View {
         }
         .background(Color.flakeBG)
         .ignoresSafeArea(edges: .top)
+    }
+
+    private func openInMaps(_ location: String) {
+        let encoded = location.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? location
+        if let url = URL(string: "maps://?q=\(encoded)") {
+            UIApplication.shared.open(url)
+        }
     }
 
     private var moveDetail: String {

@@ -31,6 +31,9 @@ final class AppState {
 
     // MARK: - Loading state
     var isLoadingData = false
+    /// Set to true after the first successful backend load so background syncs
+    /// don't toggle isLoadingData and cause repeated view flickers.
+    private var hasLoadedOnce = false
     var isBootstrappingData: Bool {
         authStatus == .signedIn && isLoadingData && groups.isEmpty
     }
@@ -982,11 +985,16 @@ final class AppState {
 
     func loadBackendData() async {
         guard authStatus == .signedIn, let profile = backendProfile else { return }
-        isLoadingData = true
-        defer { isLoadingData = false }
+        // Only show the bootstrap spinner on the very first load.
+        // Background syncs must be invisible — toggling isLoadingData on every
+        // 6-second poll causes the empty-state screen to flash in and out.
+        let isFirstLoad = !hasLoadedOnce
+        if isFirstLoad { isLoadingData = true }
+        defer { if isFirstLoad { isLoadingData = false } }
         do {
             let snapshot = try await FlakeBackend.shared.loadAllData(for: profile.id)
             applySnapshot(snapshot, userID: profile.id)
+            hasLoadedOnce = true
             await loadRoastReactions()
         } catch {
             print("❌ [Flake] loadBackendData failed:", error.localizedDescription)
@@ -1018,6 +1026,9 @@ final class AppState {
     private func applySnapshot(_ snapshot: BackendSnapshot, userID: UUID) {
         let loaded = snapshot.toFlakeGroups(currentUserID: userID)
 
+        // Avoid a pointless re-render when both old and new are empty — this
+        // prevents the no-groups screen from flickering on every background sync.
+        if loaded.isEmpty && groups.isEmpty { return }
         groups = loaded
         if let first = loaded.first {
             // Only reset selection if the current group is no longer in the list

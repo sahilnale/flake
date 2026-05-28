@@ -91,6 +91,21 @@ final class MessagesViewController: MSMessagesAppViewController {
             requestPresentationStyle(.expanded)
         } else {
             presentView(for: conversation, style: presentationStyle)
+            // iOS sometimes delivers conversation.selectedMessage slightly after
+            // willBecomeActive returns. Check once more after a short delay.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
+                guard let self,
+                      self.selectedMove == nil, self.selectedInvite == nil,
+                      let conv = self.activeConversation else { return }
+                let sm = conv.selectedMessage
+                if let m = self.move(from: sm) {
+                    self.selectedMove = m
+                    self.requestPresentationStyle(.expanded)
+                } else if let invite = GroupInvite.fromMessageURL(sm?.url) {
+                    self.selectedInvite = invite
+                    self.requestPresentationStyle(.expanded)
+                }
+            }
         }
     }
 
@@ -184,10 +199,10 @@ final class MessagesViewController: MSMessagesAppViewController {
                     }
                 ))
                 embed(vc)
-            } else if let move = selectedMove ?? cachedMoves.first ?? cachedMove {
-                // Show the most recent move (from tapping a card, from Supabase, or from
-                // the local SharedGroupStore cache) so the user can tap once to RSVP —
-                // no card in the thread required, and no async loading needed.
+            } else if let move = selectedMove {
+                // Only show the RSVP compact view when the user actually tapped a card.
+                // Fresh opens (user tapped the Flake icon to compose) fall through to the
+                // default "send a move / invite" view so they can create a new event.
                 let vc = makeHostingController(for: CompactSelectedMoveView(move: move) { [weak self] in
                     self?.selectedMove = move
                     self?.requestPresentationStyle(.expanded)
@@ -226,15 +241,13 @@ final class MessagesViewController: MSMessagesAppViewController {
             }
 
             // 2. A move to RSVP to: from tapping a card, Supabase fetch, or local cache.
-            // Use currentUserID (Supabase UUID) as the participant so RSVPs from the
-            // extension always key consistently with the main app.
+            // Pass currentUserID (Supabase UUID) so RSVPs are keyed consistently with
+            // the main app — iMessage participant UUIDs are NOT used here.
             if let move = move(from: selectedMessage) ?? selectedMove ?? cachedMoves.first ?? cachedMove {
                 selectedMove = move
-                let participantID = currentUserID ?? conversation.localParticipantIdentifier
                 let rsvpVC = makeHostingController(for: MoveRSVPExtensionView(
                     move: move,
-                    participants: participants(for: conversation),
-                    currentParticipantID: participantID
+                    currentUserID: currentUserID
                 ) { [weak self] status in
                     self?.send(rsvp: status, for: move, in: conversation)
                 })
@@ -316,18 +329,10 @@ final class MessagesViewController: MSMessagesAppViewController {
 
     // MARK: - Sending messages
 
-    // Force: Always attach an image and minimize all layout fields for maximum card visibility in transcript.
     private func insert(move: Move, groupEntry: SharedGroupStore.Entry?, into conversation: MSConversation) {
         guard let url = move.asURL() else { return }
         let message = MSMessage(session: MSSession())
-        let layout  = moveLayout(for: move, participants: participants(for: conversation))
-
-        layout.caption         = displayTitle(for: move).isEmpty ? "Move" : displayTitle(for: move)
-        layout.subcaption      = "leader +25 · \(move.location) · tap to RSVP"
-        let trailing           = responseSummary(for: move, participants: participants(for: conversation))
-        layout.trailingCaption = trailing.isEmpty ? "responses pending" : trailing
-        if layout.image == nil { layout.image = FlakeMessageArtwork.moveIcon() }
-
+        let layout  = moveCardLayout(for: move)
         message.summaryText = "\(displayTitle(for: move)) · group leader locked in"
         message.url         = url
         message.layout      = layout
@@ -355,31 +360,25 @@ final class MessagesViewController: MSMessagesAppViewController {
 
     // Force: Always attach an image and minimize all layout fields for maximum card visibility in transcript.
     private func send(rsvp: RSVPStatus, for move: Move, in conversation: MSConversation) {
-        // Prefer the Supabase user UUID so RSVPs are consistent between the
-        // extension and the main app, regardless of how the RSVP view was reached.
-        let participantID = currentUserID ?? conversation.localParticipantIdentifier
+        // Always use the Supabase UUID so RSVPs key correctly with the main app.
+        // The RSVP view enforces that currentUserID is loaded before this fires,
+        // so this should never be nil in practice — fall back only as a safety net.
+        guard let uid = currentUserID else {
+            NSLog("⚠️ send(rsvp:) called before currentUserID loaded — dropping")
+            return
+        }
+
         var updatedMove = move
-        updatedMove.rsvps[participantID] = rsvp
+        updatedMove.rsvps[uid] = rsvp
         guard let url = updatedMove.asURL() else { return }
 
-        let message = MSMessage(session: conversation.selectedMessage?.session ?? MSSession())
-        let layout  = rsvpLayout(
-            for: updatedMove,
-            status: rsvp,
-            participants: participants(for: conversation),
-            currentParticipantID: participantID
-        )
-        
-        // Restore original caption, subcaption, trailingCaption logic
-        layout.caption = everyoneResponded(move: updatedMove, participants: participants(for: conversation)) ? "Everyone responded" : "RSVP \(rsvp.label)"
+        let layout = MSMessageTemplateLayout()
+        layout.image = FlakeMessageArtwork.moveCard(move: updatedMove, selectedStatus: rsvp, participants: [])
+        layout.caption = "RSVP · \(rsvp.label)"
         layout.subcaption = "\(displayTitle(for: updatedMove)) · \(rsvp.receiptSubcaption)"
-        let trailing = responseSummary(for: updatedMove, participants: participants(for: conversation))
-        layout.trailingCaption = trailing.isEmpty ? "responses pending" : trailing
-        
-        if layout.image == nil {
-            layout.image = FlakeMessageArtwork.moveIcon()
-        }
-        
+        layout.trailingCaption = rsvpSummary(for: updatedMove)
+
+        let message = MSMessage(session: conversation.selectedMessage?.session ?? MSSession())
         message.summaryText = "\(displayTitle(for: updatedMove)) · \(rsvp.label)"
         message.url    = url
         message.layout = layout
@@ -389,10 +388,9 @@ final class MessagesViewController: MSMessagesAppViewController {
             guard error == nil else { return }
             DispatchQueue.main.async { self?.dismiss() }
 
-            // Persist RSVP to Supabase in background
+            // Persist RSVP to Supabase — uid is captured so it's always available
             #if canImport(Supabase)
-            guard let uid = self?.currentUserID else { return }
-            let moveID = updatedMove.id
+            let moveID       = updatedMove.id
             let capturedRSVP = rsvp
             Task {
                 await ExtensionGroupLoader.shared.submitRSVP(
@@ -405,67 +403,30 @@ final class MessagesViewController: MSMessagesAppViewController {
         }
     }
 
-    private func moveLayout(for move: Move, participants: [MessageParticipant]) -> MSMessageTemplateLayout {
+    // MARK: - Layout helpers (Supabase-keyed, no iMessage participant UUIDs)
+
+    private func moveCardLayout(for move: Move) -> MSMessageTemplateLayout {
         let layout = MSMessageTemplateLayout()
-        layout.image = FlakeMessageArtwork.moveCard(move: move, selectedStatus: nil, participants: participants)
-        // Defensive: fallback captions
+        layout.image = FlakeMessageArtwork.moveCard(move: move, selectedStatus: nil, participants: [])
         let caption = displayTitle(for: move)
-        layout.caption = caption.isEmpty ? "Move" : caption
-        
-        let subcaptionFallback = "leader +25 · \(move.location) · tap to RSVP"
-        layout.subcaption = layout.subcaption?.isEmpty == false ? layout.subcaption : subcaptionFallback
-        layout.subcaption = layout.subcaption ?? subcaptionFallback
-        
-        let trailing = responseSummary(for: move, participants: participants)
-        layout.trailingCaption = trailing.isEmpty ? "responses pending" : trailing
+        layout.caption         = caption.isEmpty ? "Move" : caption
+        layout.subcaption      = "leader +25 · \(move.location) · tap to RSVP"
+        layout.trailingCaption = rsvpSummary(for: move)
         return layout
     }
 
-    private func rsvpLayout(for move: Move, status: RSVPStatus, participants: [MessageParticipant], currentParticipantID: UUID) -> MSMessageTemplateLayout {
-        let layout = MSMessageTemplateLayout()
-        layout.image = FlakeMessageArtwork.moveCard(move: move, selectedStatus: status, participants: participants)
-        
-        let captionFallback = everyoneResponded(move: move, participants: participants) ? "Everyone responded" : "RSVP \(status.receiptAction)"
-        layout.caption = captionFallback.isEmpty ? "RSVP" : captionFallback
-        
-        let subcaptionFallback = "\(displayTitle(for: move)) · \(status.receiptSubcaption)"
-        layout.subcaption = subcaptionFallback.isEmpty ? "\(displayTitle(for: move))" : subcaptionFallback
-        
-        let trailingFallback = responseSummary(for: move, participants: participants)
-        layout.trailingCaption = trailingFallback.isEmpty ? "responses pending" : trailingFallback
-        
-        return layout
-    }
-
-    private func displayTitle(for move: Move) -> String {
-        let trimmedTitle = move.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmedTitle.isEmpty { return move.location }
-        if trimmedTitle.localizedCaseInsensitiveContains(move.location) { return trimmedTitle }
-        return trimmedTitle
-    }
-
-    private func participants(for conversation: MSConversation) -> [MessageParticipant] {
-        let local = MessageParticipant(id: conversation.localParticipantIdentifier, label: "you", isMe: true)
-        let remoteIDs = conversation.remoteParticipantIdentifiers
-        let remotes = remoteIDs.enumerated().map { index, id in
-            let label = remoteIDs.count == 1 ? "friend" : "friend \(index + 1)"
-            return MessageParticipant(id: id, label: label, isMe: false)
-        }
-        return [local] + remotes
-    }
-
-    private func responseSummary(for move: Move, participants: [MessageParticipant]) -> String {
-        if everyoneResponded(move: move, participants: participants) {
-            return "everyone responded"
-        }
-        let locked = move.rsvps.values.filter { $0 == .lockedIn }.count
-        let maybe = move.rsvps.values.filter { $0 == .sendingIt }.count
-        let out = move.rsvps.values.filter { $0 == .flaked }.count
+    /// Summary of RSVPs keyed purely on Supabase UUIDs — no iMessage participant mapping.
+    private func rsvpSummary(for move: Move) -> String {
+        let locked = move.rsvps.values.filter { $0 == .lockedIn  }.count
+        let maybe  = move.rsvps.values.filter { $0 == .sendingIt }.count
+        let out    = move.rsvps.values.filter { $0 == .flaked    }.count
+        if locked == 0 && maybe == 0 && out == 0 { return "be the first to RSVP" }
         return "\(locked) yes · \(maybe) maybe · \(out) out"
     }
 
-    private func everyoneResponded(move: Move, participants: [MessageParticipant]) -> Bool {
-        !participants.isEmpty && participants.allSatisfy { move.rsvps[$0.id] != nil }
+    private func displayTitle(for move: Move) -> String {
+        let t = move.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.isEmpty ? move.location : t
     }
 }
 
